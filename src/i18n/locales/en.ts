@@ -1612,6 +1612,7 @@ export default {
     "manualUpdateOnlyDesc": "New versions are still detected, but upgrading requires a full installer or a supported package manager.",
     "updateChannel": "Update Channel",
     "updateChannelDesc": "Choose which release lane this desktop app follows.",
+    "updateChannelVietnamese": "Vietnamese",
     "updateChannelRealeco": "Realeco · Stable",
     "updateChannelLimo": "Limo · Nightly",
     "updateChannelCielo": "Cielo · Canary",

@@ -17,14 +17,14 @@ import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
 import { saveLyricCacheSongMetadata } from './lyricExport/lyricCacheMetadata';
 import type { AudioQualityInfo } from '../types/audioQuality';
 import { normalizeAudioQualityInfo } from '../utils/audioQualityInfo';
-import { parseEmbeddedMetadataAsync } from '../utils/localMetadataWorkerClient';
+import { readCachedAudioQuality } from './cachedAudioQuality';
 
 export async function loadOnlineSongAudioSource(
     song: SongResult,
     audioQuality: AudioQualityPreference,
     prefetched: PrefetchedSongData | null
 ): Promise<
-    | { kind: 'ok'; audioSrc: string; blobUrl?: string; replayGain?: ReplayGainInfo; audioQualityInfo?: AudioQualityInfo }
+    | { kind: 'ok'; audioSrc: string; blobUrl?: string; replayGain?: ReplayGainInfo; audioQualityInfo?: AudioQualityInfo; audioQualityInfoReady?: Promise<AudioQualityInfo | undefined> }
     | { kind: 'unavailable'; reason?: ProviderErrorCode }
 > {
     const cachedAudioBlob = await getCachedSongAudioBlob(song);
@@ -38,13 +38,7 @@ export async function loadOnlineSongAudioSource(
                 replayGain = await getCachedSongReplayGain(song);
                 if (replayGain) console.log(`[Cache] ReplayGain recovered for "${song.name}" from the store, not the provider`);
             }
-            let audioQualityInfo: AudioQualityInfo | undefined;
-            try {
-                audioQualityInfo = normalizeAudioQualityInfo(await parseEmbeddedMetadataAsync(new File([cachedAudioBlob], 'cached-audio'), false));
-            } catch {
-                // Metadata failure must not prevent cached audio from playing.
-            }
-            return { kind: 'ok', audioSrc: blobUrl, blobUrl, replayGain, audioQualityInfo };
+            return { kind: 'ok', audioSrc: blobUrl, blobUrl, replayGain, audioQualityInfoReady: readCachedAudioQuality(song, cachedAudioBlob) };
         }
     }
 

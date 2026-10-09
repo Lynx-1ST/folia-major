@@ -104,7 +104,7 @@ export default {
       "openAudioEqualizer": "Mở hiệu ứng âm thanh",
       "openCustomShortcut": "Mở cài đặt phím tắt",
       "openPinnedCommands": "Mở lệnh đã ghim",
-      "openReplayGain": "Mở độ khuếch đại âm thanh",
+      "openReplayGain": "Mở ReplayGain",
       "openImportExport": "Mở sao lưu và nhập",
       "openBottomUiSettings": "Mở cài đặt giao diện phía dưới",
       "openLyricsAnimation": "Mở cài đặt hoạt ảnh lời",
@@ -209,7 +209,7 @@ export default {
         "pinnedRow": "Ba nút đã ghim"
       },
       "replayGain": {
-        "panel": "Cài đặt · Độ khuếch đại âm thanh",
+        "panel": "Cài đặt · ReplayGain",
         "modeOff": "Tắt",
         "modeTrack": "Theo bài",
         "modeAlbum": "Theo album",
@@ -433,7 +433,7 @@ export default {
         "tabs": "Các thẻ",
         "body": "Thẻ hiện tại",
         "sourceInfo": "Thông tin nguồn",
-        "sourceGain": "Độ khuếch đại âm thanh",
+        "sourceGain": "ReplayGain",
         "sourceLyrics": "Lời bài hát",
         "sourceOffset": "Độ lệch thời gian",
         "sourceLyricsFile": "Nhập / xuất",
@@ -498,7 +498,7 @@ export default {
       "themePark": "Theme Park",
       "customShortcutSettings": "Phím tắt riêng",
       "pinnedCommands": "Lệnh đã ghim",
-      "replayGainSettings": "Độ khuếch đại âm thanh (ReplayGain)",
+      "replayGainSettings": "ReplayGain",
       "importExportSettings": "Sao lưu và nhập",
       "playerBar": "Thanh điều khiển dưới",
       "panelSlide": "Bật/tắt bảng bên",
@@ -908,7 +908,7 @@ export default {
         "cycleReverse": "Shift + Tab chuyển lùi. Chỉ các thẻ đang tồn tại được đưa vào vòng chuyển, tùy nguồn hiện tại.",
         "sourceTab": "Thẻ nguồn chỉ xuất hiện sau thẻ ảnh bìa khi bài từ tệp cục bộ, Navidrome hoặc nguồn trực tuyến. Biểu tượng theo nguồn; bài không có nguồn riêng chỉ có bốn thẻ.",
         "sourceInfo": "Phần trên hiện thông tin bài theo nguồn: tệp cục bộ có tên tệp, kích thước, bitrate và trạng thái lời; Navidrome có ID bài trên máy chủ; nguồn trực tuyến không có khối này.",
-        "sourceGain": "“Độ khuếch đại âm thanh” là ReplayGain: tắt, theo bài hoặc album. Giá trị bên phải là thẻ của bài, T cho bài và A cho album; hiện không có nếu tệp thiếu thẻ.",
+        "sourceGain": "“ReplayGain” là thẻ cân bằng âm lượng: tắt, theo bài hoặc album. Giá trị bên phải là thẻ của bài, T cho bài và A cho album; hiện không có nếu tệp thiếu thẻ.",
         "sourceLyrics": "Hai biểu tượng nhỏ bên phải hàng lời: một nhập/xuất tệp (lrc / vtt / ttml / qrc / yrc / krc / txt / fia), một ghép trực tuyến. Dải dưới cho biết nguồn đang dùng; sau khi nhập có thêm ô để chuyển về.",
         "sourceOffset": "“Độ lệch thời gian” bên dưới đổi theo bước 250ms hoặc nhận số nhập; số dương làm lời xuất hiện muộn. Giá trị chỉ dùng cho lần phát này. Độ lệch toàn cục trong cài đặt được giữ lâu dài và cộng với giá trị này.",
         "sourceLyricsFile": "Biểu tượng trái hàng lời mở cửa sổ nhập/xuất chung để bạn chọn thao tác.",
@@ -1118,7 +1118,7 @@ export default {
         "description": "Đặt giờ/phút trong bảng lệnh, nhập số phút hoặc dùng --on và --off. Đếm ngược giữ qua khởi động lại; hết giờ thoát ứng dụng máy tính hoặc tạm dừng trên Web."
       },
       "nowPlayingCard": {
-        "title": "Thẻ đang phát và xem trước bài tiếp",
+        "title": "Thẻ Now Playing và xem trước bài tiếp",
         "description": "Thẻ có thể nhấp trên trang lời hỗ trợ hiện theo thời gian, luôn hiện, ẩn hoặc hiện ở trang chủ. Thẻ xem trước bài tiếp và hiển thị tiến trình Automix trên viền."
       },
       "seamlessHandover": {
@@ -1142,7 +1142,7 @@ export default {
       },
       "independentAutomixVisuals": {
         "title": "Hình ảnh Automix độc lập",
-        "description": "Vòng giữa và viền thẻ Đang phát có công tắc, xem trước riêng; đồng bộ tốt hơn khi điều hướng hoặc mở giữa chuyển bài. Chuyển dưới năm giây không có hoạt ảnh."
+        "description": "Vòng giữa và viền thẻ Now Playing có công tắc, xem trước riêng; đồng bộ tốt hơn khi điều hướng hoặc mở giữa chuyển bài. Chuyển dưới năm giây không có hoạt ảnh."
       }
     },
     "v0_7_3": {

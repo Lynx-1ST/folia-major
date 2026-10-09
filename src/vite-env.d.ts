@@ -49,6 +49,7 @@ declare global {
   }
 
   interface ElectronAudioCacheEntry {
+    revision?: string;
     found: boolean;
     data?: Uint8Array | ArrayBuffer | null;
     mimeType?: string | null;

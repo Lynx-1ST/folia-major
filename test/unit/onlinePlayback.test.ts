@@ -11,7 +11,7 @@ const isUrlValidMock = vi.hoisted(() => vi.fn(() => true));
 const updatePrefetchedAudioUrlMock = vi.hoisted(() => vi.fn());
 const metadataMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/utils/localMetadataWorkerClient', () => ({ parseEmbeddedMetadataAsync: metadataMock }));
+vi.mock('@/services/cachedAudioQuality', () => ({ readCachedAudioQuality: metadataMock }));
 
 vi.mock('@/services/onlineMusic/resourceCache', () => ({
     getCachedSongAudioBlob: cachedAudioMock,
@@ -79,7 +79,7 @@ describe('online audio ReplayGain plumbing', () => {
         vi.clearAllMocks();
         cachedAudioMock.mockResolvedValue(null);
         isUrlValidMock.mockReturnValue(true);
-        metadataMock.mockReset().mockResolvedValue(null);
+        metadataMock.mockReset().mockResolvedValue(undefined);
     });
 
     it.each(['preview-only', 'region-restricted', 'auth-required'] as const)('preserves %s for the queue and does not cache audio', async reason => {
@@ -136,8 +136,22 @@ describe('online audio ReplayGain plumbing', () => {
         cachedAudioMock.mockResolvedValueOnce(new Blob(['cached audio']));
         metadataMock.mockResolvedValueOnce({ bitrate: 128000, sampleRate: 44100, codec: 'MP3' });
         const result = await loadOnlineSongAudioSource({ ...song, replayGain: { trackGain: 0 }, audioQualityInfo: { bitrate: 4800000 } }, 'hires', null);
-        expect(result).toMatchObject({ kind: 'ok', audioQualityInfo: { bitrate: 128000, sampleRate: 44100, codec: 'MP3' } });
+        expect(result.kind).toBe('ok');
+        if (result.kind === 'ok') {
+            expect(result.audioQualityInfo).toBeUndefined();
+            expect(await result.audioQualityInfoReady).toEqual({ bitrate: 128000, sampleRate: 44100, codec: 'MP3' });
+        }
         expect(sourceMock).not.toHaveBeenCalled();
+    });
+
+    it('returns the cached playback URL before background metadata finishes', async () => {
+        let resolveQuality!: (value: unknown) => void;
+        metadataMock.mockReturnValueOnce(new Promise(resolve => { resolveQuality = resolve; }));
+        cachedAudioMock.mockResolvedValueOnce(new Blob(['cached audio']));
+        const result = await loadOnlineSongAudioSource({ ...song, replayGain: { trackGain: 0 } }, 'high', null);
+        expect(result).toMatchObject({ kind: 'ok', audioSrc: 'blob:test' });
+        resolveQuality({ bitrate: 128000 });
+        if (result.kind === 'ok') expect(await result.audioQualityInfoReady).toEqual({ bitrate: 128000 });
     });
 
     it('clears old stream metadata when the replacement stream has no information', () => {

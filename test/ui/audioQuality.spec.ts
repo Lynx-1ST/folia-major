@@ -38,4 +38,16 @@ test('shows current source quality in the mini player and discards it on song ch
         useSettingsModalStore.getState().openSettings('help');
     });
     await expect(page.getByRole('link', { name: 'Lynx-1ST/folia-major', exact: true })).toHaveAttribute('href', 'https://github.com/Lynx-1ST/folia-major');
+    await page.evaluate(async () => {
+        const settingsPath = '/src/stores/useSettingsModalStore.ts';
+        const viewPath = '/src/stores/useAppViewStore.ts';
+        const { useSettingsModalStore } = await import(settingsPath);
+        const { useAppViewStore } = await import(viewPath);
+        useSettingsModalStore.getState().closeSettings();
+        useAppViewStore.setState({ view: 'player', isPanelOpen: true, panelTab: 'account' });
+    });
+    for (const name of ['Standard', 'Very High', 'Lossless', 'Hi-Res']) {
+        await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+    }
+    await page.screenshot({ path: 'test-results/quality-labels-english.png' });
 });

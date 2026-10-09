@@ -1611,6 +1611,7 @@ export default {
     "manualUpdateOnlyDesc": "仍会检查新版本，但升级需要下载完整安装包或使用受支持的包管理器。",
     "updateChannel": "更新通道",
     "updateChannelDesc": "选择此桌面端应用跟随的发布通道。",
+    "updateChannelVietnamese": "越南语",
     "updateChannelRealeco": "Realeco · 正式版",
     "updateChannelLimo": "Limo · Nightly",
     "updateChannelCielo": "Cielo · Canary",

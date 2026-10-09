@@ -1,5 +1,6 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from 'react';
 import { applyOnlineAudioSourceMetadata, loadOnlineSongAudioSource } from '../../../services/onlinePlayback';
+import { watchDeferredAudioQuality } from '../../../services/deferredAudioQuality';
 import type { SongResult } from '../../../types';
 import type { AudioQualityPreference } from '../../../types/onlineMusic';
 import {
@@ -157,6 +158,7 @@ export const createOnlineRecoveryController = ({
                     ? null
                     : Date.now();
                 setAudioSrc(audioResult.audioSrc);
+                watchDeferredAudioQuality(song, audioResult.audioSrc, audioResult.audioQualityInfoReady);
                 return true;
             } catch (error) {
                 console.error('[App] Failed to recover online playback source', error);

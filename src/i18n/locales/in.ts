@@ -1604,6 +1604,7 @@ export default {
     "manualUpdateOnlyDesc": "Versi baru tetap diperiksa, tetapi pembaruan memerlukan installer lengkap atau pengelola paket yang didukung.",
     "updateChannel": "Saluran Pembaruan",
     "updateChannelDesc": "Pilih jalur rilis yang diikuti aplikasi desktop ini.",
+    "updateChannelVietnamese": "Vietnam",
     "updateChannelRealeco": "Realeco · Stabil",
     "updateChannelLimo": "Limo · Nightly",
     "updateChannelCielo": "Cielo · Canary",

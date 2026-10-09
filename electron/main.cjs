@@ -37,6 +37,7 @@ const {
   getUpdateDiscoveryConfig,
   getUpdateProviderConfig,
   parseUpdateMetadataVersion,
+  migrateVietnameseChannelPreference,
   resolveReleaseChannel,
 } = require('./updateChannels.cjs');
 const { resolveCacheLimit, selectEvictions } = require('./audioCachePrune.cjs');
@@ -1846,6 +1847,7 @@ const MODELS_DIRECTORY_SETTING_KEY = 'MODELS_DIRECTORY';
 const ENABLE_UPDATE_CHECK_SETTING_KEY = 'ENABLE_UPDATE_CHECK';
 const ENABLE_AUTO_UPDATE_SETTING_KEY = 'ENABLE_AUTO_UPDATE';
 const UPDATE_CHANNEL_SETTING_KEY = 'UPDATE_CHANNEL';
+const UPDATE_CHANNEL_VI_MIGRATION_KEY = 'UPDATE_CHANNEL_VI_MIGRATION_V1';
 const LAST_SEEN_UPDATE_VERSION_SETTING_KEY = 'LAST_SEEN_UPDATE_VERSION';
 const STAGE_MODE_ENABLED_SETTING_KEY = 'STAGE_MODE_ENABLED';
 const STAGE_MODE_SOURCE_SETTING_KEY = 'STAGE_MODE_SOURCE';
@@ -3171,15 +3173,29 @@ function getPackagedReleaseChannel() {
 }
 
 function getCurrentReleaseChannel() {
-  return resolveReleaseChannel(
-    app.getVersion(),
-    store.get(UPDATE_CHANNEL_SETTING_KEY) || getPackagedReleaseChannel(),
-  );
+  const version = app.getVersion();
+  const packagedChannel = getPackagedReleaseChannel();
+  let storedChannel = store.get(UPDATE_CHANNEL_SETTING_KEY);
+  if (process.platform === 'win32') {
+    const migrationComplete = store.get(UPDATE_CHANNEL_VI_MIGRATION_KEY) === true;
+    const migration = migrateVietnameseChannelPreference({
+      version, declaredChannel: packagedChannel, storedChannel, migrationComplete,
+    });
+    if (!migrationComplete && migration.migrationComplete) {
+      if (migration.channel !== storedChannel) {
+        storedChannel = migration.channel;
+        store.set(UPDATE_CHANNEL_SETTING_KEY, storedChannel);
+      }
+      store.set(UPDATE_CHANNEL_VI_MIGRATION_KEY, true);
+    }
+  }
+  return resolveReleaseChannel(version, storedChannel || packagedChannel);
 }
 
 function normalizeUpdateChannelSelection(value) {
   const channel = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return channel === 'realeco' || channel === 'limo' || channel === 'cielo' ? channel : null;
+  return channel === 'realeco' || channel === 'limo' || channel === 'cielo'
+    || (channel === 'vietnamese' && process.platform === 'win32') ? channel : null;
 }
 
 function getUpdateCheckSupportReason() {
@@ -3873,9 +3889,11 @@ async function readAudioCacheEntry(cacheKey) {
     fsp.utimes(dataPath, now, now).catch(() => {});
 
     let mimeType = 'audio/mpeg';
+    let revision;
     if (rawMeta) {
       try {
         const parsedMeta = JSON.parse(rawMeta);
+        revision = typeof parsedMeta.revision === 'string' ? parsedMeta.revision : Number.isFinite(parsedMeta.updatedAt) ? `legacy:${parsedMeta.updatedAt}:${dataBuffer.byteLength}` : undefined;
         if (typeof parsedMeta.mimeType === 'string' && parsedMeta.mimeType.trim()) {
           mimeType = parsedMeta.mimeType;
         }
@@ -3888,6 +3906,7 @@ async function readAudioCacheEntry(cacheKey) {
       found: true,
       data: dataBuffer,
       mimeType,
+      revision,
     };
   } catch {
     return {
@@ -3972,6 +3991,7 @@ async function writeAudioCacheEntry(cacheKey, data, mimeType, limitBytes) {
       cacheKey,
       mimeType: mimeType || 'audio/mpeg',
       size: buffer.byteLength,
+      revision: crypto.randomUUID(),
       updatedAt: Date.now(),
     }), 'utf-8'),
   ]);
@@ -5502,6 +5522,8 @@ ipcMain.handle('save-settings', (event, key, value) => {
     if (!channel) {
       return getPublicSettings();
     }
+    // Run the one-time migration before persisting an intentional channel selection.
+    getCurrentReleaseChannel();
     nextValue = channel;
   }
   if (

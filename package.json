@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.7.16-vi.2",
+  "version": "0.7.16-vi.3",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",
@@ -77,7 +77,8 @@
       {
         "provider": "github",
         "owner": "Lynx-1ST",
-        "repo": "folia-major"
+        "repo": "folia-major",
+        "channel": "vi"
       }
     ],
     "files": [
@@ -289,5 +290,6 @@
     "three-stdlib": {
       "fflate": "$fflate"
     }
-  }
+  },
+  "foliaReleaseChannel": "vietnamese"
 }
