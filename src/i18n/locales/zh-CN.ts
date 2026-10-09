@@ -670,6 +670,7 @@ export default {
     }
   },
   "ui": {
+    "audioQualityInfo": "音频文件 / 音频流质量",
     "noTrack": "无音轨",
     "previousTrack": "上一首",
     "nextTrack": "下一首",

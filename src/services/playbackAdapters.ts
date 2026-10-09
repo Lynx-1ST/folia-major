@@ -167,6 +167,7 @@ export function buildUnifiedLocalSong({
         // needs `album.coverUrl`, which is the only cover channel queue-derived surfaces read.
         album: { id: 0, name: displayAlbum || '', ...(coverUrl ? { coverUrl } : {}) },
         durationMs: localSong.duration,
+        audioQualityInfo: localSong.audioQualityInfo ?? (localSong.bitrate ? { bitrate: localSong.bitrate } : undefined),
         isPureMusic: useMatchedLyrics ? localSong.matchedIsPureMusic : false,
         isLocal: true,
         localRef: { songId: localSong.id },

@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Verify language and Discord behavior
-        run: npm run test:unit -- test/unit/i18n test/unit/discordPresence.test.ts test/unit/command-palette/commandRegistryContract.test.ts test/unit/settings/settingsNavModel.test.ts
+        run: npm run test:unit -- test/unit/i18n test/unit/discordPresence.test.ts test/unit/command-palette/commandRegistryContract.test.ts test/unit/settings/settingsNavModel.test.ts test/unit/utils/audioQualityInfo.test.ts test/unit/onlinePlayback.test.ts test/unit/prefetchService.test.ts test/unit/onlineMusic/neteaseProvider.test.ts
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable

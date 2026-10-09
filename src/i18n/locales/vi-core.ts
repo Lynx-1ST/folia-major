@@ -314,6 +314,7 @@ export default {
     "randomVisualizerModePerSongOff": "Đã tắt hiệu ứng lời bài hát ngẫu nhiên cho mỗi bài"
   },
   "ui": {
+    "audioQualityInfo": "Chất lượng tệp / luồng âm thanh",
     "noTrack": "Chưa có bài hát",
     "previousTrack": "Bài trước",
     "nextTrack": "Bài tiếp",

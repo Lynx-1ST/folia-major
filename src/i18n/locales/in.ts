@@ -668,6 +668,7 @@ export default {
     }
   },
   "ui": {
+    "audioQualityInfo": "Kualitas berkas / aliran audio",
     "noTrack": "Tidak Ada Trek",
     "previousTrack": "Lagu sebelumnya",
     "nextTrack": "Lagu berikutnya",

@@ -1217,6 +1217,7 @@ export interface ReplayGainInfo {
 }
 
 export interface SongResult {
+  audioQualityInfo?: import('./types/audioQuality').AudioQualityInfo;
   id: MediaId;
   name: string;
   artists: Artist[];
@@ -1282,6 +1283,7 @@ export interface LocalSong {
   fileSignature?: string; // Lightweight file identity for incremental scans
   mimeType: string;
   bitrate?: number; // bps
+  audioQualityInfo?: import('./types/audioQuality').AudioQualityInfo;
   addedAt: number; // timestamp
 
   // Canonical metadata and retained source snapshots

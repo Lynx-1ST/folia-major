@@ -670,6 +670,7 @@ export default {
     }
   },
   "ui": {
+    "audioQualityInfo": "Audio file / stream quality",
     "noTrack": "No Track",
     "previousTrack": "Previous track",
     "nextTrack": "Next track",

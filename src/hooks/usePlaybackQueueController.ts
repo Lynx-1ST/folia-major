@@ -607,7 +607,7 @@ export function usePlaybackQueueController({
         shouldAutoPlayRef.current = true;
         const songKey = getPlaybackSongKey(song);
         const resolvedSong = preloadedOnlineAudioResult?.kind === 'ok'
-            ? applyOnlineAudioSourceMetadata(song, preloadedOnlineAudioResult.replayGain)
+            ? applyOnlineAudioSourceMetadata(song, preloadedOnlineAudioResult.replayGain, preloadedOnlineAudioResult.audioQualityInfo)
             : song;
         const resolvedQueue = replacePlaybackSongInQueue(newQueue, resolvedSong);
         currentSongRef.current = songKey;

@@ -233,16 +233,14 @@ export const restorePlaybackSourceForSong = async (
     }
     setAudioSrc(audioResult.audioSrc);
 
-    const restoredSong = applyOnlineAudioSourceMetadata(song, audioResult.replayGain);
-    if (restoredSong.replayGain) {
-        setCurrentSong(prev => {
-            if (!prev || !isSamePlaybackSong(prev, song)) return prev;
-            return { ...prev, replayGain: restoredSong.replayGain };
-        });
-        const restoredQueue = replacePlaybackSongInQueue(queue || [restoredSong], restoredSong);
-        setPlayQueue?.(restoredQueue);
-        void persistLastPlaybackCache?.(restoredSong, restoredQueue);
-    }
+    const restoredSong = applyOnlineAudioSourceMetadata(song, audioResult.replayGain, audioResult.audioQualityInfo);
+    setCurrentSong(prev => {
+        if (!prev || !isSamePlaybackSong(prev, song)) return prev;
+        return { ...prev, replayGain: restoredSong.replayGain, audioQualityInfo: restoredSong.audioQualityInfo };
+    });
+    const restoredQueue = replacePlaybackSongInQueue(queue || [restoredSong], restoredSong);
+    setPlayQueue?.(restoredQueue);
+    void persistLastPlaybackCache?.(restoredSong, restoredQueue);
 
     const cachedLyrics = await getSongCacheWithLegacyMigration<LyricData>('lyric', song, migrateLyricDataRenderHints);
     const restoredPreferredLyrics = resolveOnlineLyrics(onlineLyricsState, cachedLyrics);
