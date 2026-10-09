@@ -42,6 +42,7 @@ type ElectronSettingsState = {
     UPDATE_CHANNEL: 'realeco' | 'limo' | 'cielo' | 'internal';
     STAGE_MODE_SOURCE: string;
     DISCORD_RICH_PRESENCE_ENABLED: boolean;
+    DISCORD_RICH_PRESENCE_APPLICATION_ID: string;
 };
 
 export type DesktopSettingsChrome = {

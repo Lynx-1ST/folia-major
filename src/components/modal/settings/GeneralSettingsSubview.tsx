@@ -68,6 +68,9 @@ const GeneralSettingsSubview: React.FC<GeneralSettingsSubviewProps> = ({
         if (lang === 'in' || lang?.startsWith('id')) {
             return t('options.appLanguageInID') || 'Bahasa Indonesia';
         }
+        if (lang?.startsWith('vi')) {
+            return t('options.appLanguageViVN');
+        }
         return t('options.appLanguageEnUS') || 'English';
     };
 
@@ -78,6 +81,7 @@ const GeneralSettingsSubview: React.FC<GeneralSettingsSubviewProps> = ({
         { value: 'zh-CN', label: t('options.appLanguageZhCN') },
         { value: 'en', label: t('options.appLanguageEnUS') || 'English' },
         { value: 'in', label: t('options.appLanguageInID') || 'Bahasa Indonesia' },
+        { value: 'vi', label: t('options.appLanguageViVN') },
     ];
 
     const languageHint = appLanguagePreference === 'system'
@@ -105,6 +109,7 @@ const GeneralSettingsSubview: React.FC<GeneralSettingsSubviewProps> = ({
                     </div>
                     <CustomSelect
                         value={appLanguagePreference}
+                        ariaLabel={t('options.appLanguage')}
                         onChange={(value) => {
                             void onAppLanguagePreferenceChange(value as AppLanguagePreference);
                         }}

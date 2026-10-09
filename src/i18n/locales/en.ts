@@ -665,7 +665,8 @@ export default {
       "settings-language-system": { "title": "Follow system language", "description": "Use the browser or system language" },
       "settings-language-zh-CN": { "title": "Switch language to Chinese", "description": "Use Simplified Chinese in the interface" },
       "settings-language-en": { "title": "Switch language to English", "description": "Use English in the interface" },
-      "settings-language-in": { "title": "Switch language to Indonesian", "description": "Use Bahasa Indonesia in the interface" }
+      "settings-language-in": { "title": "Switch language to Indonesian", "description": "Use Bahasa Indonesia in the interface" },
+      "settings-language-vi": {"title":"Switch language to Vietnamese","description":"Use Vietnamese in the interface"}
     }
   },
   "ui": {
@@ -1526,6 +1527,7 @@ export default {
     "appLanguageZhCN": "Simplified Chinese",
     "appLanguageEnUS": "English",
     "appLanguageInID": "Indonesian",
+    "appLanguageViVN": "Tiếng Việt",
     "appLanguageSystemHint": "Follow the browser or system language. Current: {{language}}",
     "playbackEntryView": "View opened by Play",
     "playbackEntryViewDesc": "Which view opens by default after you press play.",
@@ -1854,7 +1856,13 @@ export default {
     "stageNotRunning": "Please start the now-playing service on this machine and ensure the player is playing.",
     "discordRichPresence": "Discord Rich Presence",
     "enableDiscordRichPresence": "Enable Discord playback status",
-    "discordRichPresenceDesc": "Show the current Folia track in Discord desktop. Folia connects with its built-in application identity.",
+    "discordRichPresenceDesc": "Show the current song title in Discord using your application identity, with artist, artwork, and playback progress.",
+    "discordApplicationId": "Discord Application ID",
+    "discordApplicationIdHint": "Enter the public Application ID from the Discord Developer Portal. No token or Client Secret is needed.",
+    "discordApplicationIdInvalid": "Enter an Application ID containing 16–24 digits.",
+    "discordApplicationIdSaved": "Application ID saved. Discord will reconnect with the new identity.",
+    "discordApplicationIdSaveFailed": "Could not save the Application ID. Please try again.",
+    "discordApplicationIdSaving": "Saving…",
     "discordPresenceDisabled": "Disabled",
     "discordPresenceConnected": "Connected",
     "discordPresenceDisconnected": "Disconnected",

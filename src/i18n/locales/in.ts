@@ -663,7 +663,8 @@ export default {
       "settings-language-system": { "title": "Ikuti bahasa sistem", "description": "Gunakan bahasa browser atau sistem" },
       "settings-language-zh-CN": { "title": "Ganti bahasa ke Tionghoa", "description": "Gunakan Bahasa Tionghoa Sederhana di antarmuka" },
       "settings-language-en": { "title": "Ganti bahasa ke Inggris", "description": "Gunakan Bahasa Inggris di antarmuka" },
-      "settings-language-in": { "title": "Ganti bahasa ke Indonesia", "description": "Gunakan Bahasa Indonesia di antarmuka" }
+      "settings-language-in": { "title": "Ganti bahasa ke Indonesia", "description": "Gunakan Bahasa Indonesia di antarmuka" },
+      "settings-language-vi": {"title":"Ganti bahasa ke Vietnam","description":"Gunakan Bahasa Vietnam di antarmuka"}
     }
   },
   "ui": {
@@ -1519,6 +1520,7 @@ export default {
     "appLanguageZhCN": "Tionghoa Sederhana",
     "appLanguageEnUS": "Inggris",
     "appLanguageInID": "Indonesia",
+    "appLanguageViVN": "Tiếng Việt",
     "appLanguageSystemHint": "Ikuti bahasa browser atau sistem. Saat ini: {{language}}",
     "playbackEntryView": "Tampilan yang dibuka Putar",
     "playbackEntryViewDesc": "Tampilan mana yang dibuka secara default setelah Anda menekan putar.",
@@ -1846,7 +1848,13 @@ export default {
     "stageNotRunning": "Silakan jalankan layanan now-playing di mesin ini dan pastikan pemutar sedang memutar.",
     "discordRichPresence": "Discord Rich Presence",
     "enableDiscordRichPresence": "Aktifkan status pemutaran Discord",
-    "discordRichPresenceDesc": "Tampilkan trek Folia saat ini di Discord desktop. Folia terhubung dengan identitas aplikasi bawaannya.",
+    "discordRichPresenceDesc": "Tampilkan judul lagu saat ini di Discord dengan identitas aplikasi Anda, beserta artis, sampul, dan progres pemutaran.",
+    "discordApplicationId": "ID Aplikasi Discord",
+    "discordApplicationIdHint": "Masukkan ID Aplikasi publik dari Portal Pengembang Discord. Token atau Client Secret tidak diperlukan.",
+    "discordApplicationIdInvalid": "Masukkan ID Aplikasi yang terdiri dari 16–24 digit.",
+    "discordApplicationIdSaved": "ID Aplikasi disimpan. Discord akan terhubung kembali dengan identitas baru.",
+    "discordApplicationIdSaveFailed": "Tidak dapat menyimpan ID Aplikasi. Coba lagi.",
+    "discordApplicationIdSaving": "Menyimpan…",
     "discordPresenceDisabled": "Dinonaktifkan",
     "discordPresenceConnected": "Terhubung",
     "discordPresenceDisconnected": "Terputus",

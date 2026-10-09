@@ -485,6 +485,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         UPDATE_CHANNEL: DEFAULT_UPDATE_CHANNEL,
         STAGE_MODE_SOURCE: 'stage-api',
         DISCORD_RICH_PRESENCE_ENABLED: false,
+        DISCORD_RICH_PRESENCE_APPLICATION_ID: '',
     });
     const [electronSettingsLoaded, setElectronSettingsLoaded] = useState(false);
     const [savedElectronAiCredentials, setSavedElectronAiCredentials] = useState({
@@ -660,6 +661,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             setElectronSaveStatus('saved');
             setTimeout(() => setElectronSaveStatus('idle'), 2000);
         }
+    };
+
+    const handleSaveDiscordApplicationId = async (applicationId: string) => {
+        await window.electron?.saveSettings?.('DISCORD_RICH_PRESENCE_APPLICATION_ID', applicationId);
+        setElectronSettings(previous => ({ ...previous, DISCORD_RICH_PRESENCE_APPLICATION_ID: applicationId }));
+        const status = await window.electron?.getDiscordPresenceStatus?.();
+        if (status) setDiscordPresenceStatus(status);
     };
 
     const handleToggleDiscordPresence = async (enabled: boolean) => {
@@ -1763,6 +1771,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 }}
                                                 discord={{
                                                     enabled: electronSettings.DISCORD_RICH_PRESENCE_ENABLED,
+                                                    applicationId: electronSettings.DISCORD_RICH_PRESENCE_APPLICATION_ID,
+                                                    onSaveApplicationId: handleSaveDiscordApplicationId,
                                                     onToggle: handleToggleDiscordPresence,
                                                     status: discordPresenceStatus,
                                                 }}

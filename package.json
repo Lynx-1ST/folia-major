@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.7.16",
+  "version": "0.7.16-vi.1",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",
@@ -66,7 +66,8 @@
     "electronLanguages": [
       "en-US",
       "zh-CN",
-      "id"
+      "id",
+      "vi"
     ],
     "generateUpdatesFilesForAllChannels": true,
     "directories": {
@@ -75,7 +76,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "chthollyphile",
+        "owner": "Lynx-1ST",
         "repo": "folia-major"
       }
     ],
@@ -177,7 +178,8 @@
       "installerLanguages": [
         "en_US",
         "zh_CN",
-        "id"
+        "id",
+        "vi_VN"
       ],
       "include": "build/installer.nsh"
     },

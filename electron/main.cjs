@@ -26,7 +26,7 @@ const { createKugouApiBridge } = require('./kugouApiBridge.cjs');
 const { createBodianApiBridge } = require('./bodianApiBridge.cjs');
 const { createBodianMediaPolicy } = require('./bodian/mediaCors.cjs');
 const { createQqAuthSessionRepository } = require('./qqAuthSessionRepository.cjs');
-const { DEFAULT_DISCORD_APPLICATION_ID, createDiscordPresenceController } = require('./discordPresence.cjs');
+const { DEFAULT_DISCORD_APPLICATION_ID, createDiscordPresenceController, normalizeDiscordApplicationId } = require('./discordPresence.cjs');
 const { createVoiceInputPauseMonitor } = require('./voiceInputPause.cjs');
 const { createDisplaySleepBlocker } = require('./displaySleepBlocker.cjs');
 const { createLyricApi } = require('./lyricApi.cjs');
@@ -1582,6 +1582,28 @@ const mainProcessStartupPromise = prepareMainProcessStartup();
 // --- Electron main process locale map ---
 const APP_LOCALE_KEY = 'APP_LOCALE';
 const mainLocale = {
+  vi: {
+    trayShowWindow: 'Hiện cửa sổ',
+    trayHideWindow: 'Ẩn cửa sổ',
+    trayOpenRemote: 'Cửa sổ điều khiển từ xa',
+    trayUnlockRemote: 'Mở khóa cửa sổ điều khiển',
+    trayTransparentBackground: 'Nền trong suốt',
+    trayToggleClickThrough: 'Cho phép nhấp xuyên',
+    trayAlwaysOnTop: 'Luôn ở trên cùng',
+    trayHideTaskbar: 'Ẩn biểu tượng trên thanh tác vụ',
+    trayDesktopLyricMode: 'Lời bài hát trên màn hình',
+    trayToggleWallpaperMode: 'Chế độ hình nền',
+    trayResetWindow: 'Đặt lại cửa sổ',
+    trayQuit: 'Thoát',
+    dialogImportTitle: 'Không thể nhập thư mục này',
+    dialogImportMessage: 'Không thể nhập trực tiếp thư mục hệ thống hoặc thư mục người dùng thông thường.\nVui lòng chọn thư mục riêng để lưu nhạc.',
+    dialogChooseOther: 'Chọn thư mục khác',
+    dialogCancel: 'Hủy',
+    crashTitle: 'Folia gặp sự cố',
+    crashMessage: 'Ứng dụng đã gặp sự cố và lưu nhật ký. Gửi nhật ký cho nhà phát triển sẽ giúp xác định nguyên nhân.',
+    crashOpenFolder: 'Mở thư mục nhật ký',
+    crashClose: 'Đóng',
+  },
   'zh-CN': {
     trayShowWindow: '显示窗口',
     trayHideWindow: '隐藏窗口',
@@ -1650,7 +1672,7 @@ const mainLocale = {
   },
 };
 
-// Maps an arbitrary BCP 47 tag onto one of the three locales the main process ships.
+// Maps an arbitrary BCP 47 tag onto a locale the main process ships.
 // Returns null for unsupported tags so callers can keep walking the preference list.
 function normalizeMainLocaleKey(value) {
   if (typeof value !== 'string' || !value) {
@@ -1663,6 +1685,9 @@ function normalizeMainLocaleKey(value) {
   }
   if (lowered.startsWith('zh')) {
     return 'zh-CN';
+  }
+  if (lowered.startsWith('vi')) {
+    return 'vi';
   }
   if (lowered.startsWith('en')) {
     return 'en';
@@ -1705,7 +1730,7 @@ function detectSystemLocaleKey() {
 // modules with their own dialog copy (the mod loader) can ask for the key.
 function getMainLocaleKey() {
   const stored = store.get(APP_LOCALE_KEY);
-  if (stored === 'zh-CN' || stored === 'en' || stored === 'in') {
+  if (stored === 'zh-CN' || stored === 'en' || stored === 'in' || stored === 'vi') {
     return stored;
   }
   return detectSystemLocaleKey();
@@ -1831,6 +1856,7 @@ const OBS_BROWSER_SOURCE_TOKEN_SETTING_KEY = 'OBS_BROWSER_SOURCE_TOKEN';
 const OBS_BROWSER_SOURCE_PORT_SETTING_KEY = 'OBS_BROWSER_SOURCE_PORT';
 const LYRIC_API_ENABLED_SETTING_KEY = 'LYRIC_API_ENABLED';
 const DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY = 'DISCORD_RICH_PRESENCE_ENABLED';
+const DISCORD_RICH_PRESENCE_APPLICATION_ID_SETTING_KEY = 'DISCORD_RICH_PRESENCE_APPLICATION_ID';
 const MINIMIZE_TO_TRAY_SETTING_KEY = 'MINIMIZE_TO_TRAY';
 const CLOSE_TO_TRAY_SETTING_KEY = 'CLOSE_TO_TRAY';
 const HIDE_TASKBAR_ICON_SETTING_KEY = 'HIDE_TASKBAR_ICON';
@@ -1848,9 +1874,9 @@ const MOD_SYSTEM_ENABLED_SETTING_KEY = 'MOD_SYSTEM_ENABLED';
 const DEFAULT_STAGE_API_PORT = 32107;
 const DEFAULT_OBS_BROWSER_SOURCE_PORT = 32108;
 const DEFAULT_LYRIC_API_PORT = 32109;
-const FOLIA_RELEASES_URL = 'https://github.com/chthollyphile/folia-major/releases';
+const FOLIA_RELEASES_URL = 'https://github.com/Lynx-1ST/folia-major/releases';
 const FOLIA_GITHUB_REPOSITORY = {
-  owner: 'chthollyphile',
+  owner: 'Lynx-1ST',
   repo: 'folia-major',
 };
 const WINDOWS_APP_USER_MODEL_ID = 'top.izuna.foliamajor';
@@ -1962,6 +1988,7 @@ function getPublicSettings() {
     [MAIN_WINDOW_ALWAYS_ON_TOP_SETTING_KEY]: readStoredBoolean(MAIN_WINDOW_ALWAYS_ON_TOP_SETTING_KEY, false),
     [TRANSPARENT_PLAYER_BACKGROUND_SETTING_KEY]: readStoredBoolean(TRANSPARENT_PLAYER_BACKGROUND_SETTING_KEY, false),
     [DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY]: readStoredBoolean(DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY, false),
+    [DISCORD_RICH_PRESENCE_APPLICATION_ID_SETTING_KEY]: normalizeDiscordApplicationId(store.get(DISCORD_RICH_PRESENCE_APPLICATION_ID_SETTING_KEY)) || DEFAULT_DISCORD_APPLICATION_ID,
     [LYRIC_API_ENABLED_SETTING_KEY]: readStoredBoolean(LYRIC_API_ENABLED_SETTING_KEY, false),
     [VOICE_INPUT_PAUSE_ENABLED_SETTING_KEY]: readStoredBoolean(VOICE_INPUT_PAUSE_ENABLED_SETTING_KEY, false),
     [PREVENT_DISPLAY_SLEEP_DURING_PLAYBACK_SETTING_KEY]: readStoredBoolean(PREVENT_DISPLAY_SLEEP_DURING_PLAYBACK_SETTING_KEY, false),
@@ -2057,7 +2084,7 @@ const lyricApi = createLyricApi({
 });
 
 const discordPresence = createDiscordPresenceController({
-  getApplicationId: () => DEFAULT_DISCORD_APPLICATION_ID,
+  getApplicationId: () => normalizeDiscordApplicationId(store.get(DISCORD_RICH_PRESENCE_APPLICATION_ID_SETTING_KEY)) || DEFAULT_DISCORD_APPLICATION_ID,
   isEnabled: () => readStoredBoolean(DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY, false),
   onStatusChange: (status) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -5452,7 +5479,7 @@ ipcMain.handle('playback-display-sleep-set-active', (event, active) => {
 });
 
 ipcMain.handle('set-app-locale', (event, localeKey) => {
-  if (localeKey === 'zh-CN' || localeKey === 'en' || localeKey === 'in') {
+  if (localeKey === 'zh-CN' || localeKey === 'en' || localeKey === 'in' || localeKey === 'vi') {
     store.set(APP_LOCALE_KEY, localeKey);
     refreshTrayMenu();
   }
@@ -5460,11 +5487,16 @@ ipcMain.handle('set-app-locale', (event, localeKey) => {
 });
 
 ipcMain.handle('save-settings', (event, key, value) => {
-  if (key === 'DISCORD_RICH_PRESENCE_APPLICATION_ID') {
-    return getPublicSettings();
-  }
-
   let nextValue = value;
+  if (key === DISCORD_RICH_PRESENCE_APPLICATION_ID_SETTING_KEY) {
+    if (!isTrustedMainWindowContents(event.sender)) {
+      throw new Error('Untrusted renderer attempted to change Discord application identity.');
+    }
+    nextValue = normalizeDiscordApplicationId(value);
+    if (!nextValue) {
+      throw new Error('Invalid Discord Application ID.');
+    }
+  }
   if (key === UPDATE_CHANNEL_SETTING_KEY) {
     const channel = normalizeUpdateChannelSelection(value);
     if (!channel) {
@@ -5666,7 +5698,7 @@ ipcMain.handle('save-settings', (event, key, value) => {
     });
   }
 
-  if (key === DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY) {
+  if (key === DISCORD_RICH_PRESENCE_ENABLED_SETTING_KEY || key === DISCORD_RICH_PRESENCE_APPLICATION_ID_SETTING_KEY) {
     void discordPresence.refresh();
     broadcastPlaybackSyncBridgeStatus();
   }

@@ -665,7 +665,8 @@ export default {
       "settings-language-system": { "title": "跟随系统语言", "description": "使用浏览器或系统语言" },
       "settings-language-zh-CN": { "title": "切换为中文", "description": "界面使用简体中文" },
       "settings-language-en": { "title": "切换为英文", "description": "界面使用 English" },
-      "settings-language-in": { "title": "切换为印尼语", "description": "界面使用 Bahasa Indonesia" }
+      "settings-language-in": { "title": "切换为印尼语", "description": "界面使用 Bahasa Indonesia" },
+      "settings-language-vi": {"title":"切换为越南语","description":"界面使用越南语"}
     }
   },
   "ui": {
@@ -1525,6 +1526,7 @@ export default {
     "appLanguageZhCN": "简体中文",
     "appLanguageEnUS": "English",
     "appLanguageInID": "Indonesian",
+    "appLanguageViVN": "Tiếng Việt",
     "appLanguageSystemHint": "跟随浏览器或系统语言。当前生效：{{language}}",
     "playbackEntryView": "播放后进入的视图",
     "playbackEntryViewDesc": "点击播放后默认打开哪个视图。",
@@ -1855,7 +1857,13 @@ export default {
     "stageNotRunning": "请在本机启动 now-playing 服务，并确保播放器正在播放",
     "discordRichPresence": "Discord 播放状态",
     "enableDiscordRichPresence": "启用 Discord 播放状态",
-    "discordRichPresenceDesc": "在 Discord 桌面端展示 Folia 当前播放歌曲。",
+    "discordRichPresenceDesc": "使用你的应用身份在 Discord 显示当前歌曲标题、歌手、封面和播放进度。",
+    "discordApplicationId": "Discord 应用 ID",
+    "discordApplicationIdHint": "输入 Discord 开发者门户中的公开应用 ID，无需令牌或 Client Secret。",
+    "discordApplicationIdInvalid": "请输入包含 16–24 位数字的应用 ID。",
+    "discordApplicationIdSaved": "应用 ID 已保存，Discord 将使用新身份重新连接。",
+    "discordApplicationIdSaveFailed": "无法保存应用 ID，请重试。",
+    "discordApplicationIdSaving": "保存中…",
     "discordPresenceDisabled": "未启用",
     "discordPresenceConnected": "已连接",
     "discordPresenceDisconnected": "未连接",
