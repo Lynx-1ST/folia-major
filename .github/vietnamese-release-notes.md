@@ -1,5 +1,8 @@
 ## Folia tiếng Việt cho Windows
 
+- Tối ưu tìm dòng lời đang phát bằng tìm kiếm theo thời gian cho lời đã sắp xếp; giữ nguyên xử lý tua, dòng chồng nhau và định dạng không theo thứ tự.
+- Khi tạm dừng, xóa phổ FFT một lần thay vì cấp phát và gửi mảng rỗng ở mỗi khung hình. Giữ dữ liệu phổ mới khi tiếp tục phát.
+
 - Bổ sung thông số QQ, KuGou và Navidrome: đọc header luồng đang phát trong nền, tối đa 256 KB và 5 giây. Chỉ hiển thị bitrate khi xác định được; thông số tệp gốc Navidrome được ghi rõ **Nguồn gốc** khi chưa xác minh luồng chuyển mã.
 - Giảm xử lý visualizer, FFT và hiệu ứng nền khi cửa sổ bị ẩn hoặc thu nhỏ. Giữ hoạt động phát nhạc, đồng hồ lời bài hát, Automix, wallpaper và OBS khi cần. Worker đọc header tự đóng và bộ nhớ đệm giới hạn 48 nguồn.
 
@@ -17,6 +20,6 @@
 - Discord Rich Presence dùng Application ID mặc định `1203744706702610522`; có thể đổi tại **Cài đặt → Tích hợp → Discord Rich Presence**.
 - Trạng thái Discord rút gọn hiển thị tiêu đề bài hát; thẻ mở rộng giữ nghệ sĩ, ảnh bìa và tiến trình phát.
 
-Tải tệp **Folia-Setup-0.7.16-vi.4.exe** để cài trên Windows x64. Bật Discord Rich Presence trong cài đặt tích hợp và mở ứng dụng Discord trên máy để sử dụng.
+Tải tệp **Folia-Setup-0.7.16-vi.5.exe** để cài trên Windows x64. Bật Discord Rich Presence trong cài đặt tích hợp và mở ứng dụng Discord trên máy để sử dụng.
 
 Đây là bản phát hành thử của nhánh tiếng Việt. Bộ cài chưa có chữ ký số. Tệp `SHA256SUMS.txt` cung cấp mã SHA-256 để kiểm tra bản tải xuống.

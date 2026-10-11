@@ -29,6 +29,14 @@ test('shows current source quality in the mini player and discards it on song ch
     await page.evaluate(async () => {
         const modulePath = '/src/stores/usePlaybackStore.ts';
         const { usePlaybackStore } = await import(modulePath);
+        const currentSong = usePlaybackStore.getState().currentSong;
+        usePlaybackStore.setState({ currentSong: { ...currentSong, audioQualityInfo: { bitrate: 4800000, codec: 'FLAC', provenance: 'source' } } });
+    });
+    await expect(quality).toHaveText('Nguồn gốc · 4800 kbps · FLAC');
+
+    await page.evaluate(async () => {
+        const modulePath = '/src/stores/usePlaybackStore.ts';
+        const { usePlaybackStore } = await import(modulePath);
         usePlaybackStore.setState({ currentSong: { id: 2, name: 'Unknown Quality', artists: [], album: { id: 1, name: 'Test' }, durationMs: 180000 } });
     });
     await expect(quality).toHaveCount(0);
