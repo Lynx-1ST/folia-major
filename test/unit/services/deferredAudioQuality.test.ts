@@ -10,6 +10,18 @@ beforeEach(() => { usePlaybackStore.setState({ currentSong: song, audioSrc: 'blo
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 describe('deferred playback quality', () => {
+    it('preserves reliable stream bitrate when headers only add sample rate', async () => {
+        usePlaybackStore.setState({ currentSong: { ...song, audioQualityInfo: { bitrate: 320000 } } });
+        watchDeferredAudioQuality(song, 'blob:current', Promise.resolve({ sampleRate: 44100, provenance: 'stream' }));
+        await flush();
+        expect(usePlaybackStore.getState().currentSong?.audioQualityInfo).toEqual({ bitrate: 320000, sampleRate: 44100, provenance: 'stream' });
+    });
+    it('replaces original file precision with measured transcoded stream properties', async () => {
+        usePlaybackStore.setState({ currentSong: { ...song, audioQualityInfo: { bitrate: 4800000, bitDepth: 24, provenance: 'source' } } });
+        watchDeferredAudioQuality(song, 'blob:current', Promise.resolve({ sampleRate: 44100, provenance: 'stream' }));
+        await flush();
+        expect(usePlaybackStore.getState().currentSong?.audioQualityInfo).toEqual({ sampleRate: 44100, provenance: 'stream' });
+    });
     it('updates the current song and queue after background work completes', async () => {
         watchDeferredAudioQuality(song, 'blob:current', Promise.resolve({ bitrate: 320000 }));
         await flush();

@@ -10,7 +10,9 @@ export function normalizeAudioQualityInfo(value: AudioQualityInfo | null | undef
         if (Number.isFinite(number) && number > 0) result[key] = number;
     }
     if (typeof value.codec === 'string' && value.codec.trim()) result.codec = value.codec.trim().slice(0, 40);
-    return Object.keys(result).length ? result : undefined;
+    if (!Object.keys(result).length) return undefined;
+    if (value.provenance === 'source' || value.provenance === 'stream') result.provenance = value.provenance;
+    return result;
 }
 
 export function formatAudioQualityInfo(value: AudioQualityInfo | undefined, language = 'en'): string {

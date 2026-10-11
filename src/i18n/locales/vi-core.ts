@@ -315,6 +315,7 @@ export default {
   },
   "ui": {
     "audioQualityInfo": "Chất lượng tệp / luồng âm thanh",
+    "audioQualitySource": "Nguồn gốc",
     "noTrack": "Chưa có bài hát",
     "previousTrack": "Bài trước",
     "nextTrack": "Bài tiếp",

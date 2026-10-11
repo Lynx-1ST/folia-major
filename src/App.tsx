@@ -95,6 +95,7 @@ import { usePlaybackQueueController } from './hooks/usePlaybackQueueController';
 import { usePlaybackTransportController } from './hooks/usePlaybackTransportController';
 import { useLocalLibraryCatalog } from './hooks/useLocalLibraryCatalog';
 import { usePlaybackVisualizerBridge } from './hooks/usePlaybackVisualizerBridge';
+import { useAudioHeaderQuality } from './hooks/useAudioHeaderQuality';
 import { useRandomVisualizerMode } from './hooks/useRandomVisualizerMode';
 import { useObsBrowserSourcePublisher } from './hooks/useObsBrowserSourcePublisher';
 import { useLyricApiPublisher } from './hooks/useLyricApiPublisher';
@@ -160,6 +161,7 @@ const LOCAL_TAIL_DECODE_ERROR_TOLERANCE_SEC = 3;
 const NEXT_UP_LEAD_SEC = 5;
 
 export default function App() {
+    useAudioHeaderQuality();
     countRender('App');
     const { t } = useTranslation();
     const {
@@ -2658,7 +2660,7 @@ export default function App() {
                     {currentView === 'home' || currentView === 'player' ? (
                         <Home
                             model={homeModel}
-                            isHomeFullyHidden={isHomeFullyHidden}
+                            isHomeFullyHidden={isHomeFullyHidden || !visualizerRendererModel.renderEnabled}
                             isInteractive={shouldShowHomeSurface}
                         />
                     ) : null}
@@ -2669,7 +2671,7 @@ export default function App() {
                 initial={false}
                 onExitComplete={() => setHasLatticeExited(useAppViewStore.getState().view !== 'lattice')}
             >
-                {currentView === 'lattice' && (
+                {currentView === 'lattice' && visualizerRendererModel.renderEnabled && (
                     <motion.div
                         key="lattice"
                         className="absolute inset-0 z-10 pointer-events-auto"

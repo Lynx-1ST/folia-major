@@ -942,6 +942,8 @@ declare global {
       getDiscordPresenceStatus: () => Promise<ElectronDiscordPresenceStatus>;
       publishDiscordPresenceSnapshot: (snapshot: ElectronDiscordPresenceSnapshot) => Promise<ElectronDiscordPresenceStatus>;
       getPlaybackSyncBridgeStatus: () => Promise<ElectronPlaybackSyncBridgeStatus>;
+      getMainWindowRenderState: () => Promise<{ visible: boolean; wallpaper: boolean }>;
+      onMainWindowRenderStateChanged: (callback: (state: { visible: boolean; wallpaper: boolean }) => void) => () => void;
       getVoiceInputPauseStatus: () => Promise<ElectronVoiceInputPauseStatus>;
       onVoiceInputStateChanged: (callback: (state: ElectronVoiceInputPauseStatus) => void) => () => void;
       onPlaybackSyncBridgeStatusChanged: (callback: (status: ElectronPlaybackSyncBridgeStatus) => void) => () => void;

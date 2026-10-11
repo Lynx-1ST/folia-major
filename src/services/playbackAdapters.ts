@@ -1,5 +1,6 @@
 import { AmllDbPlatform, LocalSong, LyricProviderSource, SongResult, UnifiedSong } from '../types';
 import { NavidromeSong } from '../types/navidrome';
+import { getNavidromeAudioQualityInfo } from './navidromeService';
 import type { LocalLibraryAssignment, LocalLibraryEntity } from '../types/localLibrary';
 import { buildLocalLibraryIndex, followEntityRedirect, type LocalLibraryIndex } from '../utils/localLibraryIndex';
 import { getLocalCoverAssetUrl } from './localCoverAssetUrl';
@@ -254,6 +255,7 @@ export function buildUnifiedNavidromeSong(
         durationMs: navidromeSong.durationMs || 0,
         isPureMusic: navidromeSong.lyricsSource === 'online' ? navidromeSong.matchedIsPureMusic : false,
         isNavidrome: true,
+        audioQualityInfo: getNavidromeAudioQualityInfo(navidromeSong.navidromeData, navidromeSong.navidromeData.streamUrl),
         navidromeData: navidromeSong,
         sourceRef: { kind: 'navidrome', mediaId: navidromeSong.navidromeData.id },
         matchedLyricsSource: options?.matchedLyricsSource,

@@ -10,9 +10,12 @@ export function watchDeferredAudioQuality(song: SongResult, audioSrc: string, re
     void ready.then(info => {
         const state = usePlaybackStore.getState();
         if (!info || state.audioSrc !== audioSrc || !state.currentSong || !isSamePlaybackSong(state.currentSong, song)) return;
+        const previous = state.currentSong.audioQualityInfo;
+        const definedInfo = Object.fromEntries(Object.entries(info).filter(([, value]) => value !== undefined));
+        const audioQualityInfo = previous?.provenance === 'source' && info.provenance !== 'source' ? info : { ...previous, ...definedInfo };
         usePlaybackStore.setState({
-            currentSong: { ...state.currentSong, audioQualityInfo: info },
-            playQueue: state.playQueue.map(entry => isSamePlaybackSong(entry, song) ? { ...entry, audioQualityInfo: info } : entry),
+            currentSong: { ...state.currentSong, audioQualityInfo },
+            playQueue: state.playQueue.map(entry => isSamePlaybackSong(entry, song) ? { ...entry, audioQualityInfo } : entry),
         });
     }).catch(() => { /* Metadata is optional and must not interrupt playback. */ });
 }

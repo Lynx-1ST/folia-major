@@ -30,7 +30,7 @@ jobs:
       - name: Check types
         run: npm run typecheck
       - name: Verify language and Discord behavior
-        run: npm run test:unit -- test/unit/i18n test/unit/discordPresence.test.ts test/unit/command-palette/commandRegistryContract.test.ts test/unit/settings/settingsNavModel.test.ts test/unit/utils/audioQualityInfo.test.ts test/unit/onlinePlayback.test.ts test/unit/prefetchService.test.ts test/unit/onlineMusic/neteaseProvider.test.ts test/unit/utils/localMetadataWorkerClient.test.ts test/unit/services/cachedAudioQuality.test.ts test/unit/services/deferredAudioQuality.test.ts test/unit/cache/audioQualityCategory.test.ts test/unit/electron/updateChannels.test.ts
+        run: npm run test:unit -- test/unit/i18n test/unit/discordPresence.test.ts test/unit/command-palette/commandRegistryContract.test.ts test/unit/settings/settingsNavModel.test.ts test/unit/utils/audioQualityInfo.test.ts test/unit/onlinePlayback.test.ts test/unit/prefetchService.test.ts test/unit/onlineMusic/neteaseProvider.test.ts test/unit/utils/localMetadataWorkerClient.test.ts test/unit/services/cachedAudioQuality.test.ts test/unit/services/deferredAudioQuality.test.ts test/unit/cache/audioQualityCategory.test.ts test/unit/electron/updateChannels.test.ts test/unit/electron/mainWindowRenderState.test.ts test/unit/audioHeaderQuality.test.ts test/unit/navidrome/navidromeService.test.ts test/unit/onlineMusic/qqProvider.test.ts test/unit/utils/mainWindowRenderActivity.test.ts test/unit/utils/playbackVisualizerActivity.test.ts test/unit/utils/visualizerRenderActivity.test.ts
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable

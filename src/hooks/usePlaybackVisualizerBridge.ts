@@ -7,6 +7,7 @@ import type { AudioBands, LyricData } from '../types';
 import { setCurrentLineIndex, setPlayerState } from '../stores/usePlaybackStore';
 import { selectDisplayLyrics, usePlaybackStore } from '../stores/usePlaybackStore';
 import { audioBands, audioPower, currentTime, lyricCurrentTime } from '../stores/motionSignals';
+import { useMainWindowRenderActivity } from './useMainWindowRenderActivity';
 
 // src/hooks/usePlaybackVisualizerBridge.ts
 
@@ -65,6 +66,7 @@ export function usePlaybackVisualizerBridge({
     isTransitionAudible,
     getDisplayElement,
 }: UsePlaybackVisualizerBridgeParams) {
+    const { audioAnalysisEnabled } = useMainWindowRenderActivity();
     // Read here rather than passed in: store fields and the module-level motion signals.
     const activePlaybackContext = usePlaybackStore(state => state.activePlaybackContext);
     const playerState = usePlaybackStore(state => state.playerState);
@@ -84,7 +86,9 @@ export function usePlaybackVisualizerBridge({
         // a visible stutter at exactly the moment meant to be seamless.
         const hasAudibleSignal = isActuallyPlaying || isTransitionAudible();
 
-        if (hasAudibleSignal && analyserRef.current) {
+        // Hidden main windows need clocks for transport/remote lyrics, but no FFT or idle
+        // visual signal updates unless OBS or the wallpaper still consumes that signal.
+        if (audioAnalysisEnabled && hasAudibleSignal && analyserRef.current) {
             const bufferLength = analyserRef.current.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
             analyserRef.current.getByteFrequencyData(dataArray);
@@ -118,7 +122,7 @@ export function usePlaybackVisualizerBridge({
             audioBands.mid.set(process(mid, 2));
             audioBands.vocal.set(process(vocal, 1.5));
             audioBands.treble.set(process(treble, 2));
-        } else {
+        } else if (audioAnalysisEnabled) {
             const time = Date.now() / 2000;
             const breath = (Math.sin(time) + 1) * 20;
             audioPower.set(breath);
@@ -230,6 +234,7 @@ export function usePlaybackVisualizerBridge({
         animationFrameRef.current = requestAnimationFrame(updateLoop);
     }, [
         activePlaybackContext,
+        audioAnalysisEnabled,
         analyserRef,
         animationFrameRef,
         audioBands,

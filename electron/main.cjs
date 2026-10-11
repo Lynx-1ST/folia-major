@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, session, screen, dialog, shell, nativeImage, desktopCapturer, Menu, Tray, nativeTheme, powerSaveBlocker, safeStorage, protocol, crashReporter, net: electronNet } = require('electron');
 const fs = require('fs');
+const { readMainWindowRenderState } = require('./mainWindowRenderState.cjs');
 const http = require('http');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -1975,6 +1976,12 @@ function readStoredBoolean(settingKey, fallback = false) {
   }
 
   return fallback;
+}
+
+function broadcastMainWindowRenderState() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('main-window-render-state-changed', readMainWindowRenderState(mainWindow, isWallpaperModeEnabled()));
+  }
 }
 
 function getPublicSettings() {
@@ -5055,6 +5062,10 @@ function createWindow(options = {}) {
   win.on('hide', refreshTrayMenu);
   win.on('minimize', refreshTrayMenu);
   win.on('restore', refreshTrayMenu);
+  for (const eventName of ['show', 'hide', 'minimize', 'restore']) {
+    win.on(eventName, broadcastMainWindowRenderState);
+  }
+  win.webContents.on('did-finish-load', broadcastMainWindowRenderState);
 
   return win;
 }
@@ -5560,6 +5571,7 @@ ipcMain.handle('save-settings', (event, key, value) => {
   }
 
   if (key === WALLPAPER_MODE_SETTING_KEY) {
+    broadcastMainWindowRenderState();
     // Let the renderer receive its save-settings response before the process relaunches, while
     // coalescing rapid toggles into one handoff/relaunch operation.
     scheduleWallpaperModeRelaunch(Boolean(nextValue));
@@ -6246,6 +6258,12 @@ ipcMain.handle('discord-presence-publish-snapshot', (event, snapshot) => {
   }
 
   return discordPresence.publishSnapshot(snapshot);
+});
+
+ipcMain.handle('main-window-render-state-get', (event) => {
+  // Remote/OBS hosts keep their own rendering lifecycle and never inherit main-window hiding.
+  if (event.sender !== mainWindow?.webContents) return { visible: true, wallpaper: false };
+  return readMainWindowRenderState(mainWindow, isWallpaperModeEnabled());
 });
 
 ipcMain.handle('playback-sync-bridge-get-status', (event) => {
