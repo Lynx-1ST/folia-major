@@ -74,6 +74,21 @@ describe('bounded HTTP audio header', () => {
     });
 });
 describe('real header parsing', () => {
+    it.each(['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/x-m4a', 'application/octet-stream'])('detects FLAC bytes despite HTTP MIME %s', async mimeType => {
+        const info = await parseAudioHeaderQuality({ bytes: flacHeader(), mimeType, totalSize: 1000000 });
+        expect(info?.codec).toBe('FLAC');
+        expect(info?.bitDepth).toBe(16);
+        expect(info?.sampleRate).toBe(44100);
+        expect(info?.bitrate).toBeCloseTo(799966.4);
+    });
+    it('retains measured FLAC STREAMINFO when later metadata is truncated', async () => {
+        const bytes = new Uint8Array(46);
+        bytes.set(flacHeader()); bytes[4] = 0;
+        bytes.set([0x86, 0x10, 0, 0], 42); // A final picture block larger than the available header.
+        const info = await parseAudioHeaderQuality({ bytes, mimeType: 'audio/aac', totalSize: 1000000 });
+        expect(info).toMatchObject({ codec: 'FLAC', sampleRate: 44100, bitDepth: 16 });
+        expect(info?.bitrate).toBeUndefined();
+    });
     it('retains a CBR bitrate measured from MPEG frame headers', async () => {
         const info = await parseAudioHeaderQuality({ bytes: mp3Frames(), mimeType: 'audio/mpeg' });
         expect(info?.bitrate).toBe(128000);

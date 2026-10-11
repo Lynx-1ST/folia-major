@@ -10,6 +10,18 @@ beforeEach(() => { usePlaybackStore.setState({ currentSong: song, audioSrc: 'blo
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 describe('deferred playback quality', () => {
+    it('does not attach the old encoding bitrate to a conflicting measured codec', async () => {
+        usePlaybackStore.setState({ currentSong: { ...song, audioQualityInfo: { codec: 'FLAC', bitrate: 2784000, bitDepth: 24 } } });
+        watchDeferredAudioQuality(song, 'blob:current', Promise.resolve({ codec: 'AAC', sampleRate: 44100, provenance: 'stream' }));
+        await flush();
+        expect(usePlaybackStore.getState().currentSong?.audioQualityInfo).toEqual({ codec: 'AAC', sampleRate: 44100, provenance: 'stream' });
+    });
+    it('keeps NetEase bitrate when measured FLAC agrees regardless of casing', async () => {
+        usePlaybackStore.setState({ currentSong: { ...song, audioQualityInfo: { codec: 'flac', bitrate: 2784000 } } });
+        watchDeferredAudioQuality(song, 'blob:current', Promise.resolve({ codec: 'FLAC', sampleRate: 96000, provenance: 'stream' }));
+        await flush();
+        expect(usePlaybackStore.getState().currentSong?.audioQualityInfo).toEqual({ codec: 'FLAC', bitrate: 2784000, sampleRate: 96000, provenance: 'stream' });
+    });
     it('preserves reliable stream bitrate when headers only add sample rate', async () => {
         usePlaybackStore.setState({ currentSong: { ...song, audioQualityInfo: { bitrate: 320000 } } });
         watchDeferredAudioQuality(song, 'blob:current', Promise.resolve({ sampleRate: 44100, provenance: 'stream' }));

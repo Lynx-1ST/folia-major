@@ -1,5 +1,8 @@
 ## Folia tiếng Việt cho Windows
 
+- Sửa đọc định dạng âm thanh theo byte thực của luồng thay vì chọn parser từ Content-Type HTTP có thể khai báo sai. Kiểm thử FLAC với MIME AAC, MPEG, MP4 và metadata bị cắt.
+- Khi codec đo được khác metadata nguồn, không ghép bitrate và độ sâu bit của codec cũ vào codec mới. Khi cùng là FLAC, giữ bitrate NetEase cung cấp.
+
 - Tối ưu tìm dòng lời đang phát bằng tìm kiếm theo thời gian cho lời đã sắp xếp; giữ nguyên xử lý tua, dòng chồng nhau và định dạng không theo thứ tự.
 - Khi tạm dừng, xóa phổ FFT một lần thay vì cấp phát và gửi mảng rỗng ở mỗi khung hình. Giữ dữ liệu phổ mới khi tiếp tục phát.
 
@@ -20,6 +23,6 @@
 - Discord Rich Presence dùng Application ID mặc định `1203744706702610522`; có thể đổi tại **Cài đặt → Tích hợp → Discord Rich Presence**.
 - Trạng thái Discord rút gọn hiển thị tiêu đề bài hát; thẻ mở rộng giữ nghệ sĩ, ảnh bìa và tiến trình phát.
 
-Tải tệp **Folia-Setup-0.7.16-vi.5.exe** để cài trên Windows x64. Bật Discord Rich Presence trong cài đặt tích hợp và mở ứng dụng Discord trên máy để sử dụng.
+Tải tệp **Folia-Setup-0.7.16-vi.6.exe** để cài trên Windows x64. Bật Discord Rich Presence trong cài đặt tích hợp và mở ứng dụng Discord trên máy để sử dụng.
 
 Đây là bản phát hành thử của nhánh tiếng Việt. Bộ cài chưa có chữ ký số. Tệp `SHA256SUMS.txt` cung cấp mã SHA-256 để kiểm tra bản tải xuống.

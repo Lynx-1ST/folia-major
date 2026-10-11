@@ -11,7 +11,10 @@ export async function parseAudioHeaderQuality(input: { bytes: Uint8Array; mimeTy
         const stream = new ReadableStream<Uint8Array>({ start(controller) {
             controller.enqueue(input.bytes); controller.close();
         } });
-        const metadata = await parseWebStream(stream, { mimeType: input.mimeType, size: input.totalSize }, {
+        // CDN MIME headers can be wrong (e.g. FLAC advertised as audio/aac).
+        // Let music-metadata identify the container from actual bytes, rather than
+        // forcing a parser from an unverified transport label.
+        const metadata = await parseWebStream(stream, { size: input.totalSize }, {
             skipCovers: true, skipPostHeaders: true, duration: false,
             observer: event => { if (event.tag.type === 'format') format = { ...event.metadata.format }; },
         });

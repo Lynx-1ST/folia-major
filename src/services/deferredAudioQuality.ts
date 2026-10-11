@@ -12,7 +12,11 @@ export function watchDeferredAudioQuality(song: SongResult, audioSrc: string, re
         if (!info || state.audioSrc !== audioSrc || !state.currentSong || !isSamePlaybackSong(state.currentSong, song)) return;
         const previous = state.currentSong.audioQualityInfo;
         const definedInfo = Object.fromEntries(Object.entries(info).filter(([, value]) => value !== undefined));
-        const audioQualityInfo = previous?.provenance === 'source' && info.provenance !== 'source' ? info : { ...previous, ...definedInfo };
+        // Conflicting codecs describe different encodings; never carry the old encoding's
+        // bitrate/precision into the newly measured stream.
+        const codecChanged = previous?.codec && info.codec && previous.codec.trim().toLowerCase() !== info.codec.trim().toLowerCase();
+        const replace = codecChanged || (previous?.provenance === 'source' && info.provenance !== 'source');
+        const audioQualityInfo = replace ? info : { ...previous, ...definedInfo };
         usePlaybackStore.setState({
             currentSong: { ...state.currentSong, audioQualityInfo },
             playQueue: state.playQueue.map(entry => isSamePlaybackSong(entry, song) ? { ...entry, audioQualityInfo } : entry),
