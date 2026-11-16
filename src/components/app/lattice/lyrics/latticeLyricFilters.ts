@@ -1,22 +1,11 @@
 import type { Filter, Texture, UniformGroup } from 'pixi.js';
+import { PIXI_FILTER_VERTEX } from '../../../visualizer/pixiFilterVertex';
 
 // src/components/app/lattice/lyrics/latticeLyricFilters.ts
 type Pixi = typeof import('pixi.js');
 
 /** Filter vertex stage (Pixi filter conventions): used by the whole-stage edge fade only. */
-const filterVertex = `
-in vec2 aPosition;
-out vec2 vTextureCoord;
-uniform vec4 uInputSize;
-uniform vec4 uOutputFrame;
-uniform vec4 uOutputTexture;
-void main() {
-    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
-    position.x = position.x * (2.0 / uOutputTexture.x) - 1.0;
-    position.y = position.y * (2.0 * uOutputTexture.z / uOutputTexture.y) - uOutputTexture.z;
-    gl_Position = vec4(position, 0.0, 1.0);
-    vTextureCoord = aPosition * (uOutputFrame.zw * uInputSize.zw);
-}`;
+const filterVertex = PIXI_FILTER_VERTEX;
 const fade = `
 in vec2 vTextureCoord;
 out vec4 finalColor;
@@ -53,7 +42,8 @@ void main() {
 /**
  * Sweep drawn straight from the glyph texture onto the current render target. Each piece is a
  * unit quad scaled to its raster size, so `vUV` is the normalized position across the piece and
- * `uFront` / `uSoftness` / `uGlyphRange` / `uVerticalFade` are all expressed in that space.
+ * `uFront` / `uSoftness` / `uGlyphRange` / `uVerticalFade` are all expressed in that space; with
+ * `uRtl` set the horizontal axis is read from the right edge, so an RTL word fills right to left.
  * Running this as a per-sprite shader instead of a Filter removes one render-to-texture pass per
  * visible word (the dominant GPU cost of the card on every frame).
  */
@@ -70,9 +60,10 @@ uniform float uSoftness;
 uniform float uPassed;
 uniform vec2 uGlyphRange;
 uniform vec2 uVerticalFade;
+uniform float uRtl;
 void main() {
     float glyphAlpha = texture(uTexture, vUV).a;
-    float x = vUV.x;
+    float x = uRtl > 0.5 ? 1.0 - vUV.x : vUV.x;
     float start = uFront - uSoftness;
     float middle = uFront - uSoftness * 0.55;
     float mask = x < middle ? mix(1.0, 0.92, clamp((x - start) / max(0.00001, middle - start), 0.0, 1.0))
@@ -103,6 +94,7 @@ export function createLatticeSweepShader(pixi: Pixi, base: number[], word: numbe
         uSoftness: { value: 0.1, type: 'f32' }, uPassed: { value: 0, type: 'f32' },
         uGlyphRange: { value: [0, 1], type: 'vec2<f32>' },
         uVerticalFade: { value: [2, 3], type: 'vec2<f32>' },
+        uRtl: { value: 0, type: 'f32' },
     });
     const shader = new pixi.Shader({
         glProgram: pixi.GlProgram.from({ vertex: meshVertex, fragment: sweep, name: 'lattice-lyric-sweep' }),

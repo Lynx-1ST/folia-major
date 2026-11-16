@@ -32,6 +32,12 @@ describe('Vietnamese resources', () => {
         expect(vietnamese.player.play).toBe('Phát');
         expect(vietnamese.options.appLanguageViVN).toBe('Tiếng Việt');
         expect(vietnamese.commandPalette.commands['settings-language-vi'].title).toBe('Chuyển sang tiếng Việt');
+        expect(vietnamese.account.qualityStandard).toBe('Standard');
+        expect(vietnamese.account.qualityExhigh).toBe('Very High');
+        expect(vietnamese.account.qualityLossless).toBe('Lossless');
+        expect(vietnamese.account.qualityHires).toBe('Hi-Res');
+        expect(vietnamese.ui.audioQualityInfo).toBeTruthy();
+        expect(vietnamese.ui.audioQualitySource).toBeTruthy();
     });
 });
 

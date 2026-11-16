@@ -5,16 +5,16 @@ import type { HomeViewModel } from '../../../src/components/app/home/buildHomeMo
 import type { HomeLocalMusicState, HomeSurfaceProps } from '../../../src/components/app/home/homeSurfaceTypes';
 import type { GridViewCollectionDescriptor } from '../../../src/components/app/home/gridViewCollectionAdapters';
 import { useLocalLibraryCatalog } from '../../../src/hooks/useLocalLibraryCatalog';
-import type { LibraryAccountController } from '../../../src/library/core/contracts/account';
+import type { LibraryAccountController } from '../../../src/library/core/account/account.contract';
 import { useLibraryAccountController, type LibraryAccountHostTables } from '../../../src/library/app/useLibraryAccountController';
-import { useLibraryAccountProviders } from '../../../src/library/core/bindings/useLibraryAccount';
-import { resolveActiveProviderSummary } from '../../../src/library/core/model/accountRules';
+import { useLibraryAccountProviders } from '../../../src/library/core/account/useLibraryAccount';
+import { resolveActiveProviderSummary } from '../../../src/library/core/account/accountRules';
 import { useCollectionNavigationStore } from '../../../src/stores/useCollectionNavigationStore';
 import { useOnlineProviderAccountStore } from '../../../src/stores/useOnlineProviderAccountStore';
-import { useLibrarySuiteStore } from '../../../src/library/core/state/useLibrarySuiteStore';
-import { useLibraryBrowseSessionStore } from '../../../src/library/core/state/useLibraryBrowseSessionStore';
-import { DEFAULT_LIBRARY_SUITE_ID } from '../../../src/library/core/model/librarySuites';
-import { collectionKey } from '../../../src/library/core/model/collectionIdentity';
+import { useLibrarySuiteStore } from '../../../src/library/core/suite/useLibrarySuiteStore';
+import { useLibraryBrowseSessionStore } from '../../../src/library/core/shared/useLibraryBrowseSessionStore';
+import { DEFAULT_LIBRARY_SUITE_ID } from '../../../src/library/core/suite/librarySuites';
+import { collectionKey } from '../../../src/library/core/collection/collectionIdentity';
 import { omni } from '../../../src/services/onlineMusic/omni';
 import { unregisterOnlineMusicProvider } from '../../../src/services/onlineMusic/providerRegistry';
 import { DEFAULT_THEME } from '../../../src/services/baseThemes';
@@ -63,19 +63,8 @@ const loadProbeAccount = async (providerId: string): Promise<void> => {
             freshness: 'fresh',
         });
     }
-    const playlists: ProviderCollection[] = [];
-    let offset = 0;
-    let hasMore = true;
-    while (hasMore) {
-        const page = await omni.getProviderUserPlaylists(providerId, user.id, { limit: PAGE_LIMIT, offset });
-        playlists.push(...page.items);
-        hasMore = page.hasMore && page.nextOffset > offset;
-        offset = page.nextOffset;
-    }
-    const cloud = await omni.getProviderCloudCollection(providerId, user);
-    useOnlineProviderAccountStore.getState().updateAccount(providerId, {
-        collections: [...(cloud ? [cloud] : []), ...playlists],
-    });
+    // The app's own account read: the fake provider's playlists and cloud collection land in the store.
+    await omni.readAccount(providerId, 'sync');
 };
 
 const loadProbeAccounts = () => Promise.all(PROBE_PROVIDERS.map(loadProbeAccount));
@@ -138,12 +127,12 @@ const INITIAL_LOCAL_STATE: HomeLocalMusicState = {
     focusedPlaylistIndex: 0,
 };
 
-// 账户 controller 的宿主表：探针不做账户刷新、登出，切换时也不清播放（与原先不带 prepare 的平台一样），
+// 账户 controller 的宿主表：探针不登出，切换时也不清播放、不问（与原先不带 prepare 的平台一样），
 // 常量保证身份稳定。
 const PROBE_ACCOUNT_TABLES: LibraryAccountHostTables = {
-    refreshers: {},
-    logouts: {},
-    switchCleanup: { resetForProviderSwitch: () => {} },
+    logout: async () => {},
+    confirmLogout: async () => true,
+    switchCleanup: { leaveProvider: () => {}, holdsSongsOf: () => false, dropSongsOf: () => {} },
 };
 
 /** 切换平台并当场确认（首页用例只关心切换之后的数据，不经确认框）；返回是否切了过去。 */
@@ -178,6 +167,7 @@ export const useHomeProbeModel = (initial: HomeProbeLibrary): { model: HomeViewM
     const [localMusicState, setLocalMusicState] = useState<HomeLocalMusicState>(INITIAL_LOCAL_STATE);
     const [navidromeFocusedAlbumIndex, setNavidromeFocusedAlbumIndex] = useState(0);
     const [mountKey, setMountKey] = useState(0);
+    const [stage, setStage] = useState<{ enabled: boolean; active?: boolean }>({ enabled: false });
     const localLibraryCatalog = useLocalLibraryCatalog(localSongs);
     const account = useLibraryAccountController(PROBE_ACCOUNT_TABLES);
     const { providers, activeProviderId } = useLibraryAccountProviders(account);
@@ -207,6 +197,9 @@ export const useHomeProbeModel = (initial: HomeProbeLibrary): { model: HomeViewM
     }, []);
 
     const activeCollections = activeProvider?.collections;
+    // 前往 Lattice（首页工具格「队列拼贴」、bravais 工具面板）：只记账。缺省不给（首页工具格与原来一样），用例经 setLattice 打开。
+    const [latticeEnabled, setLatticeEnabled] = useState(false);
+    const openLattice = useCallback(() => recordProbeCall({ kind: 'openLattice', ids: [] }), []);
     const surfaceProps = useMemo<HomeSurfaceProps>(() => ({
         ...PROBE_SURFACE_CALLBACKS,
         onRefreshUser: () => void refreshUser(),
@@ -224,8 +217,13 @@ export const useHomeProbeModel = (initial: HomeProbeLibrary): { model: HomeViewM
         setNavidromeFocusedAlbumIndex,
         onSearchCommitted: (query, sourceTab) => recordProbeCall({ kind: 'searchCommitted', ids: [], text: query, key: String(sourceTab) }),
         onOpenSettings: () => {},
+        stageEnabled: stage.enabled,
+        stageIsActive: Boolean(stage.active),
+        onOpenStagePlayer: stage.enabled ? () => recordProbeCall({ kind: 'openStagePlayer', ids: [] }) : undefined,
+        onOpenLattice: latticeEnabled ? openLattice : undefined,
         theme: DEFAULT_THEME,
     }), [
+        stage,
         activeCollections,
         localLibraryCatalog,
         localMusicState,
@@ -235,6 +233,8 @@ export const useHomeProbeModel = (initial: HomeProbeLibrary): { model: HomeViewM
         activeProvider?.user,
         refreshLocal,
         refreshUser,
+        openLattice,
+        latticeEnabled,
     ]);
 
     const model = useMemo<HomeViewModel>(() => ({
@@ -261,6 +261,9 @@ export const useHomeProbeModel = (initial: HomeProbeLibrary): { model: HomeViewM
         providers: () => latestRef.current.account.getSnapshot().providers.map(provider => provider.providerId),
         activeProvider: () => latestRef.current.account.getSnapshot().activeProviderId,
         switchProvider: providerId => switchAndConfirm(latestRef.current.account, providerId),
+        signOut: providerId => useOnlineProviderAccountStore.getState().clearAccount(providerId),
+        setStage,
+        setLattice: setLatticeEnabled,
     }), []);
 
     return { model, mountKey };

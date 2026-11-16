@@ -6,6 +6,7 @@ import {
 import { mergeUrlBackgroundList } from './urlBackground';
 import { normalizeFontWeight } from './fontStacks';
 import type { UrlBackgroundItem } from '../types';
+import { resolveSmartBeatSettings, type SmartBeatPatch } from '../services/beatFx/smartBeatSettings';
 
 // src/utils/appearanceImportPlan.ts
 // What an imported config would actually change, computed before anything is applied. Pure: the
@@ -17,9 +18,9 @@ import type { UrlBackgroundItem } from '../types';
 // auto-switch value can also flip "prefer custom theme" — a setting that is not in the config at
 // all and would otherwise change with no warning.
 
-export type ImportGroup = 'theme' | 'visualizer' | 'fonts' | 'background' | 'songTheme' | 'trackCard';
+export type ImportGroup = 'theme' | 'visualizer' | 'fonts' | 'background' | 'songTheme' | 'trackCard' | 'libraryWall';
 
-export const IMPORT_GROUPS: ImportGroup[] = ['theme', 'visualizer', 'fonts', 'background', 'songTheme', 'trackCard'];
+export const IMPORT_GROUPS: ImportGroup[] = ['theme', 'visualizer', 'fonts', 'background', 'songTheme', 'trackCard', 'libraryWall'];
 
 export interface ImportChange {
     group: ImportGroup;
@@ -70,16 +71,21 @@ export const ACTIVATE_CUSTOM_THEME_KEY = 'activateCustomTheme';
 const FIELD_GROUPS: Record<string, ImportGroup> = {
     visualizerMode: 'visualizer',
     randomVisualizerModePerSong: 'visualizer',
+    randomVisualizerModes: 'visualizer',
     visualizerOpacity: 'visualizer',
+    lyricRenderQuality: 'visualizer',
     hidePlayerTranslationSubtitle: 'visualizer',
     showSubtitleTranslation: 'visualizer',
     subtitleContentMode: 'visualizer',
+    subtitleOverlayLayout: 'visualizer',
     subtitleOverlayBackground: 'visualizer',
     subtitleUpcomingLyricsBlur: 'visualizer',
     subtitleOverlayOpacity: 'visualizer',
     showHarmonySubtitle: 'visualizer',
     harmonySubtitleBackground: 'visualizer',
     visualizerTunings: 'visualizer',
+    // Frozen: the 13 lyric-style tunings below predate the visualizerTunings bundle, which carries any
+    // new style. Do not add a lyric style here.
     classicTuning: 'visualizer',
     cadenzaTuning: 'visualizer',
     partitaTuning: 'visualizer',
@@ -91,6 +97,8 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     monetTuning: 'visualizer',
     pendoloTuning: 'visualizer',
     sonnetTuning: 'visualizer',
+    // 智能动感模式: one setting for every visualizer, so not inside any one mode's tuning bundle.
+    smartBeat: 'visualizer',
     temperaTuning: 'visualizer',
     lumiereTuning: 'visualizer',
 
@@ -134,6 +142,27 @@ const FIELD_GROUPS: Record<string, ImportGroup> = {
     stageTrackPillMode: 'trackCard',
     stageTrackPillTimeoutSec: 'trackCard',
     stageTrackPillOnHome: 'trackCard',
+    stageTrackPillPosition: 'trackCard',
+    stageTrackPillInObs: 'trackCard',
+
+    // The bravais wall's collection stack edges. Its own group: it styles the library wall, not the
+    // picture or the card, and someone taking a look for its colours has a reason to leave it alone.
+    libraryWallStackEdges: 'libraryWall',
+    // The info strip's material and the picture behind the wall: same group, same reason.
+    libraryWallSeamClear: 'libraryWall',
+    libraryWallSeamStyle: 'libraryWall',
+    libraryWallBackdropLyrics: 'libraryWall',
+    libraryWallBackdropBlur: 'libraryWall',
+    libraryWallSeamDirection: 'libraryWall',
+    // Numbering only the playing song styles the tiles of both walls (queue collage and bravais): the
+    // library wall group is where the other tile looks are.
+    latticeBadgeCurrentOnly: 'libraryWall',
+    // The scratchpad's side tab sits on the library's edge and follows the wall's look: same group.
+    scratchpadHandleStyle: 'libraryWall',
+
+    // The frosted bar behind the player page's titlebar. Under visualizer with the other player-page
+    // switch that travels (hidePlayerTranslationSubtitle): it is part of how the playing screen looks.
+    playerHeaderBlur: 'visualizer',
 };
 
 // Fields the import applies only when the incoming value is truthy, so an incoming null means "the
@@ -145,12 +174,16 @@ const TRUTHY_GUARDED_FIELDS = new Set([
     // applyImportedConfig only applies subtitleContentMode for the known enum values, all of which
     // are truthy strings, so an empty/absent one is skipped there the same as here.
     'subtitleContentMode',
+    // Likewise applied only when it parses as a layout, every one of which is a non-empty string.
+    'subtitleOverlayLayout',
     'lyricsFontStyle',
     'lyricsFontFallbackFamilies',
     'lyricsCustomFontFamily',
     'subtitleFontStyle',
     'subtitleFontFallbackFamilies',
     'visualizerTunings',
+    // Frozen: the 13 lyric-style tunings below predate the visualizerTunings bundle, which carries any
+    // new style. Do not add a lyric style here.
     'classicTuning',
     'cadenzaTuning',
     'partitaTuning',
@@ -162,6 +195,7 @@ const TRUTHY_GUARDED_FIELDS = new Set([
     'monetTuning',
     'pendoloTuning',
     'sonnetTuning',
+    'smartBeat',
     'temperaTuning',
     'lumiereTuning',
     'monetBackgroundTuning',
@@ -172,11 +206,19 @@ const TRUTHY_GUARDED_FIELDS = new Set([
     // applyImportedConfig only applies the card's mode for the three known values, all truthy
     // strings, so an absent one is skipped there the same as here.
     'stageTrackPillMode',
+    // applyImportedConfig only applies a known info strip preset, all of which are truthy strings.
+    'libraryWallSeamStyle',
+    // Likewise a known info strip direction (auto / auto-reverse / vertical / horizontal).
+    'libraryWallSeamDirection',
+    // Likewise a known scratchpad side tab style.
+    'scratchpadHandleStyle',
 ]);
 
 // Per-renderer tunings the import skips whenever the visualizerTunings bundle is present. The three
 // background tunings are not in this set: they are applied unconditionally.
 const BUNDLED_TUNING_FIELDS = new Set([
+    // Frozen: the 13 lyric-style tunings below predate the visualizerTunings bundle, which carries any
+    // new style. Do not add a lyric style here.
     'classicTuning',
     'cadenzaTuning',
     'partitaTuning',
@@ -433,6 +475,20 @@ export function buildImportPlan({
         if (key === 'lyricsFontWeight' || key === 'subtitleFontWeight') {
             const to = normalizeFontWeight(incoming[key]);
             record({ group, key, from: current[key], to }, isSameValue(to, current[key]));
+            continue;
+        }
+
+        // 智能动感模式 is diffed as the store will hold it (from the PR #750 review): the codec carries
+        // the `enabled` switch for builds before the modes, and a mode this build does not know, which
+        // the store folds or ignores. Diffed raw, the first showed as a row of its own, and the second
+        // as a change that never lands and comes back on every import.
+        if (key === 'smartBeat') {
+            const from = resolveSmartBeatSettings(current[key] as SmartBeatPatch | undefined);
+            const to = resolveSmartBeatSettings(incoming[key] as SmartBeatPatch, from);
+            const change: ImportChange = { group, key, from, to };
+            const children = diffLeaves(from, to, group);
+            if (children.length) change.children = children;
+            record(change, children.length === 0);
             continue;
         }
 

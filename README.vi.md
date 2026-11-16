@@ -33,7 +33,7 @@ Trải nghiệm lời bài hát theo cách mới
 
 ## Giới thiệu
 
-Folia là trình phát nhạc trực tuyến tập trung vào trải nghiệm lời bài hát toàn màn hình. Ứng dụng hỗ trợ NetEase Cloud Music, KuGou, Navidrome và thư viện cục bộ, kết hợp ghép lời thông minh, chủ đề màu sắc do AI tạo và nhiều hiệu ứng lời bài hát.
+Folia là trình phát nhạc trực tuyến tập trung vào trải nghiệm lời bài hát toàn màn hình. Ứng dụng hỗ trợ NetEase Cloud Music, KuGou, QQ Music, Navidrome và thư viện cục bộ. Bản máy tính còn hỗ trợ Bodian Music, YouTube Music, Spotify và Qishui Music, kết hợp ghép lời thông minh, chủ đề màu sắc do AI tạo và nhiều hiệu ứng lời bài hát.
 
 Ứng dụng máy tính dùng Electron có trên Windows, macOS và Linux. Bản Web dựa trên Node.js có thể triển khai lên Vercel hoặc nền tảng hỗ trợ Node.js để sử dụng trên trình duyệt và thiết bị di động.
 
@@ -132,15 +132,16 @@ Dự án cũng hỗ trợ triển khai Cloudflare bằng một lần nhấp; đi
 
 [![Triển khai lên Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chthollyphile/folia-major)
 
-Với QQ Music trên Vercel hoặc Cloudflare, đặt `VITE_QQ_API_BASE` thành `/api/qq` và cấu hình `QQ_SESSION_SECRET` làm khóa bí mật phía máy chủ, **không thêm tiền tố `VITE_`**. Không cần API riêng chạy liên tục. Mặc định chỉ hỗ trợ đăng nhập bằng mã QR WeChat và phải đăng nhập trước khi phát nhạc. Trên Cloudflare, liên kết Durable Object để hỗ trợ thêm mã QR QQ. Xem [Triển khai QQ Music](docs/qq-music-deployment.md) để biết các bước, khác biệt nền tảng và cách xử lý lỗi.
+Với QQ Music trên Vercel hoặc Cloudflare, đặt `VITE_QQ_API_BASE` thành `/api/qq` và cấu hình `QQ_SESSION_SECRET` làm khóa bí mật phía máy chủ, **không thêm tiền tố `VITE_`**. Không cần API riêng chạy liên tục. Hỗ trợ đăng nhập QR WeChat và QR QQ trên điện thoại (QR QQ cần `qq-music-api` 3.3.3 trở lên); cần đăng nhập trước khi phát nhạc. Trên Cloudflare, Durable Object có thể giữ kết nối cho QR QQ và bật QR từ ứng dụng QQ Music. Xem [Triển khai QQ Music](docs/qq-music-deployment.md) để biết các bước, khác biệt nền tảng và cách xử lý lỗi.
 
 Để tự lưu trữ, dùng [Docker Compose](deploy/docker/README.md). Truy cập thư mục nhạc cục bộ cần ngữ cảnh bảo mật HTTPS đáng tin cậy; hướng dẫn có thông tin về reverse proxy NAS và chứng chỉ.
 
-Trên thiết bị di động, triển khai hoặc tự lưu trữ bản Web rồi cài PWA bằng chức năng thêm vào màn hình chính trong Chrome trên Android hoặc Safari trên iOS. Người dùng có kinh nghiệm có thể dùng Capacitor đóng gói APK Android; xem [folia-sonnet](https://github.com/chthollyphile/folia-sonnet).
+Trên thiết bị di động, triển khai hoặc tự lưu trữ bản Web rồi cài PWA bằng chức năng thêm vào màn hình chính trong Chrome trên Android hoặc Safari trên iOS. Người dùng có kinh nghiệm có thể dùng Capacitor đóng gói APK Android; xem [folia-sonnet](https://github.com/chthollyphile/folia-sonnet). Các bản Android do cộng đồng duy trì gồm [folia-ce/folia-sonnet](https://github.com/folia-ce/folia-sonnet) và [whycfawa/folia-android](https://github.com/whycfawa/folia-android); các dự án này có thể khác bản máy tính.
 
 ### Tải trực tiếp
 
 - **Windows / macOS / Linux:** Tải bộ cài mới nhất từ [Releases](https://github.com/chthollyphile/folia-major/releases/latest).
+- **Bản tiếng Việt cho Windows:** Tải từ [Lynx-1ST/folia-major Releases](https://github.com/Lynx-1ST/folia-major/releases/latest).
 - **Arch Linux:** Cài [folia-major-bin](https://aur.archlinux.org/packages/folia-major-bin) từ AUR.
 - **Flatpak:** Gói bên thứ ba do cộng đồng cung cấp có trên [Flatpark](https://flatpark.org/apps/top.izuna.foliamajor/).
 
@@ -156,11 +157,11 @@ Xem [Folia Guide](https://folia-site.cielaniska.top/guide/) để biết cách s
 ## Hệ thống mod (Folium v1.x)
 
 > [!NOTE]
-> Mod là tính năng thử nghiệm, chỉ có trên máy tính và mặc định tắt. Bật tại Cài đặt → Phòng thí nghiệm → Hệ thống mod.
+> Mod là tính năng thử nghiệm, chỉ có trên máy tính và mặc định tắt. Bật tại Cài đặt → Mods → Hệ thống mod.
 
 Mod Folium có thể thêm hiệu ứng lời và nền, chèn nội dung trên trang phát nhạc, thêm nút và dấu mốc trên thanh tiến trình, đăng ký lệnh và mục cài đặt, xử lý lời trước khi hiển thị và gọi công cụ cục bộ như ffmpeg qua điểm vào Node. Mod chạy dưới dạng mã được tin cậy: mỗi mod cần xác nhận trong cửa sổ gốc trước khi kích hoạt và phải xác nhận lại khi tệp thay đổi.
 
-- **Chợ mod:** [folium-compound.vercel.app](https://folium-compound.vercel.app) cung cấp mod chính thức và mod cộng đồng đã xét duyệt. Tải ZIP và kéo vào bảng mod để cài.
+- **Chợ mod:** [folium-compound.cielaniska.top](https://folium-compound.cielaniska.top) cung cấp mod chính thức và mod cộng đồng đã xét duyệt. Tải ZIP và kéo vào bảng mod để cài.
 - **Chứng nhận:** Mod trong chợ có chữ ký Folium và hiển thị đã chứng nhận. Mod bên thứ ba không có chữ ký hiển thị chưa xác minh và vẫn dùng được.
 - **Phát triển:** [Hướng dẫn đóng góp](docs/folium/contributing.md) gồm viết mod, gỡ lỗi, gửi lên chợ, xét duyệt, ký và cập nhật.
 - **API:** [Tham chiếu API](docs/folium/api.md) được tạo từ hợp đồng và phân theo registry, ngữ cảnh, sự kiện, dịch vụ.

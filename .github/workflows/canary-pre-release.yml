@@ -59,6 +59,16 @@ jobs:
               ;;
           esac
 
+          # The rolling release (tag `cielo`) is what every Cielo install updates from, so it has one owner at a time.
+          # While Folium 2 is in release testing that is the edge branch (dev/folium/folium-2-plan.md §10): a rolling
+          # build from any other branch would replace edge's build for every Cielo user, and the next edge build would
+          # switch them back. Such a build is kept as a branch release instead.
+          ROLLING_BRANCH="edge"
+          if [[ "${PUBLISH_MODE}" == "rolling" && "${GITHUB_REF_NAME}" != "${ROLLING_BRANCH}" ]]; then
+            echo "::notice::Only ${ROLLING_BRANCH} publishes the rolling Cielo release for now; ${GITHUB_REF_NAME} is published as a branch release."
+            PUBLISH_MODE="branch-release"
+          fi
+
           VERSION="${BASE_VERSION}-alpha.$(date -u +%s)"
           BRANCH_SLUG="$(printf '%s' "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g' | cut -c 1-40)"
           BRANCH_SLUG="${BRANCH_SLUG:-branch}"
@@ -86,7 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
 
     steps:
       - name: Check out Git repository
@@ -140,6 +150,17 @@ jobs:
           APP_VERSION_LABEL: Cielo
           APP_RELEASE_CHANNEL: cielo
         run: npm run build
+
+      # The analysis models' runtime is built from the pinned MNN source in build/beforePack.cjs
+      # (build/buildMnnRuntime.mjs; cmake and the platform's C++ compiler are on every hosted image).
+      # Cached because MNN is minutes of compile; the key covers everything the build reads.
+      - name: Cache MNN runtime build
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/.mnn-src
+            build/mnn
+          key: mnn-${{ runner.os }}-${{ hashFiles('build/buildMnnRuntime.mjs', 'native/folia-mnn/**') }}
 
       - name: Package Electron app
         env:

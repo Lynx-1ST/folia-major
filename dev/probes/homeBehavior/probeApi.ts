@@ -1,7 +1,7 @@
 import type { ProbeFault } from '../libraryBehavior/fakeProviders';
 import type { ProbeRefreshKind } from '../libraryBehavior/probeGates';
 import type { ProbeCall, ProbeRequest } from '../libraryBehavior/probeLog';
-import type { LibraryDirectoryBatchActionId, LibraryDirectorySurfaceState, LibraryDirectoryVisibilityMode } from '../../../src/library/core/contracts/directory';
+import type { LibraryDirectoryBatchActionId, LibraryDirectorySurfaceState, LibraryDirectoryVisibilityMode } from '../../../src/library/core/directory/directory.contract';
 
 // dev/probes/homeBehavior/probeApi.ts
 // 首页行为探针挂在 window 上的驱动接口。只有类型：component 用例 import 它不会把探针运行时带进 Node。
@@ -167,15 +167,48 @@ export type HomeProbeApi = {
     providers: () => string[];
     activeProvider: () => string;
     switchProvider: (providerId: string) => Promise<boolean>;
+    /** 让这个 provider 回到未登录（账户 store 的 clearAccount）：首页在线页签变成 guest。 */
+    signOut: (providerId: string) => void;
+    /** fb11：宿主的舞台模式（stageEnabled + onOpenStagePlayer，active 是 stageIsActive）；点舞台入口记一笔 openStagePlayer。 */
+    setStage: (stage: { enabled: boolean; active?: boolean }) => void;
+    /** 宿主给不给「前往 Lattice」（onOpenLattice，缺省不给）；给了之后点它记一笔 openLattice。 */
+    setLattice: (enabled: boolean) => void;
 
     // ---- suite ----
-    /** 选中的 suite（core/state/useLibrarySuiteStore）。 */
+    /** 选中的 suite（core/suite/useLibrarySuiteStore）。 */
     suite: () => string;
     /** 此刻渲染首页的 suite（选中的 suite 没实现首页时是网格）。 */
     homeSuite: () => string;
     suites: () => string[];
     /** 与首页上 DEV 浮层的按钮同一条路径（switchLibrarySuite）。 */
     setSuite: (suiteId: string) => void;
+
+    // ---- suite 外观动作（suite-chrome，B6 起 bravais 有） ----
+    /** 此刻注册着外观动作的 suite，与它声明的动作里此刻可用的那些（命令面板列命令时问的是同一个句柄）。 */
+    chrome: () => { suiteId: string; available: string[] } | null;
+    /** 像在命令面板里执行这条外观命令一样执行它；没有注册者或此刻不可用时返回 false。 */
+    runChrome: (actionId: string) => boolean;
+    /** 命令面板最近一次被请求打开（useAppViewStore.commandPaletteRequest；探针里没挂命令面板，用例读它判断滑动打开了面板）。 */
+    paletteRequest: () => { seq: number; kind: string };
+    /**
+     * 把播放队列换成这些在线歌（playback key `online:<provider>:<id>`）。探针的入队回调只记账、不进播放 store，
+     * 用例要「已在队列」的状态（bravais 聚焦卡的队列按钮）时用它。
+     */
+    setPlayQueue: (playbackKeys: string[]) => void;
+    /**
+     * fb3：把正在播放的那首换成这首在线歌（playback key；null 清空），并摆好播放 / 暂停状态。探针的播放回调只记账，
+     * 用例要「正在播放」的卡片（暂停 / 继续、进入按钮、回来时展开）时用它模拟应用的播放器。
+     */
+    setNowPlaying: (playbackKey: string | null, playing?: boolean) => void;
+    /** fb3：「播放后进入的视图」（与设置页、命令面板同一个 setter）。 */
+    setEntryView: (view: 'player' | 'lattice' | 'stay') => void;
+    /**
+     * 墙面工具面板的假宿主（probeWallToolsHost）：摆可用性（合并；null 复位成「没有歌」）。生成主题、洗牌、音量预览、
+     * 前往播放页与队列编辑只记账（generateTheme / shuffleQueue / previewVolume / openPlayer / playQueueSong …）。
+     */
+    setWallToolsHost: (snapshot: { themeGeneration?: 'ready' | 'busy' | 'unavailable'; canShuffleQueue?: boolean } | null) => void;
+    /** 应用的音量 store（useAudioSettingsStore：播放条、播放页面板、工具面板读写的同一份）。 */
+    volume: () => { volume: number; isMuted: boolean };
 
     // ---- 环境 ----
     /** 重新挂载整个首页（宿主 + Grid3D），模拟重启后回到首页（隐藏 store 先从存储重读）。 */

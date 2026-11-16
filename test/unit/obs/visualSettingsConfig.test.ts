@@ -20,6 +20,9 @@ import { useVisualizerSettingsStore } from '@/stores/useVisualizerSettingsStore'
 import { useTypographySettingsStore } from '@/stores/useTypographySettingsStore';
 import { useThemeSettingsStore } from '@/stores/useThemeSettingsStore';
 import { useStageSettingsStore } from '@/stores/useStageSettingsStore';
+import { useLibraryWallLookStore } from '@/stores/useLibraryWallLookStore';
+import { useLatticeSettingsStore } from '@/stores/useLatticeSettingsStore';
+import { usePlayerChromeSettingsStore } from '@/stores/usePlayerChromeSettingsStore';
 
 const switchMock = vi.mocked(readStoredThemeAutoSwitchEnabled);
 const generateMock = vi.mocked(readStoredThemeAutoGenerateEnabled);
@@ -35,6 +38,7 @@ describe('buildVisualSettingsConfig', () => {
         generationSourceMock.mockReset().mockReturnValue('ai');
         generateMock.mockReset().mockReturnValue(false);
         useThemeSettingsStore.setState({ followSystemTheme: false, isDaylight: false });
+        useLatticeSettingsStore.setState({ latticeBadgeCurrentOnly: false });
     });
 
     it('carries the system theme preference and keeps manual daylight changes authoritative', () => {
@@ -159,7 +163,9 @@ describe('buildVisualSettingsConfig', () => {
 
         expect(buildVisualSettingsConfig()).toMatchObject({ sonnetTuning });
         const restored = decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(buildVisualSettingsConfig()))));
-        expect(restored.sonnetTuning).toEqual(sonnetTuning);
+        // 旧的单独短码字段不带 render（分辨率与抗锯齿的覆盖随 visualizerTunings 那一包走），导入时本机的保留。
+        const { render: _render, ...carried } = sonnetTuning;
+        expect(restored.sonnetTuning).toEqual(carried);
     });
 
     it('carries the theme generation source through compress and decompress', () => {
@@ -202,6 +208,14 @@ describe('buildVisualSettingsConfig', () => {
         expect(restored.stageTrackPillOnHome).toBe(false);
     });
 
+    it('carries whether the card is drawn in the browser source', () => {
+        useStageSettingsStore.setState({ stageTrackPillInObs: true });
+        const config = buildVisualSettingsConfig();
+        expect(config.stageTrackPillInObs).toBe(true);
+        expect(decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(config)))).stageTrackPillInObs).toBe(true);
+        expect(decompressConfig(JSON.stringify({ stpo: false }))).toMatchObject({ stageTrackPillInObs: false });
+    });
+
     // A hand-written JSON carrying only the card has to be recognised as the minified shape; the
     // long-name branch would reject all three as invalid keys.
     it('decodes a minified config that carries only the card', () => {
@@ -210,5 +224,90 @@ describe('buildVisualSettingsConfig', () => {
             stageTrackPillTimeoutSec: 12,
             stageTrackPillOnHome: true,
         });
+    });
+
+    // The bravais wall's collection stack edges travel with a shared look (a tile look with no user
+    // exception); the wall's transparency and windows per block deliberately do not.
+    it('carries the collection stack edges but not the wall transparency', () => {
+        useLibraryWallLookStore.setState({ collectionStackEdges: false, look: 'clear', windowsPerBlock: 5 });
+
+        const config = buildVisualSettingsConfig();
+        expect(config.libraryWallStackEdges).toBe(false);
+        expect(config).not.toHaveProperty('look');
+        expect(config).not.toHaveProperty('windowsPerBlock');
+        expect(config).not.toHaveProperty('libraryWallLook');
+
+        const restored = decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(config))));
+        expect(restored.libraryWallStackEdges).toBe(false);
+        expect(decompressConfig(JSON.stringify({ lwse: true }))).toMatchObject({ libraryWallStackEdges: true });
+        expect(decompressConfig(JSON.stringify({ libraryWallStackEdges: false }))).toMatchObject({ libraryWallStackEdges: false });
+        useLibraryWallLookStore.setState({ collectionStackEdges: true, look: 'solid', windowsPerBlock: 3 });
+    });
+
+    // 2026-10-09: the info strip's material and the picture behind the wall are visual settings with no
+    // user exception, so they travel too (short codes lwsc / lwss / lwbl / lwbb).
+    it('carries the info strip material and the backdrop lyrics / blur', () => {
+        useLibraryWallLookStore.setState({ seamClear: true, seamStyle: 'contour', backdropLyrics: true, backdropBlur: true });
+
+        const config = buildVisualSettingsConfig();
+        expect(config).toMatchObject({
+            libraryWallSeamClear: true,
+            libraryWallSeamStyle: 'contour',
+            libraryWallBackdropLyrics: true,
+            libraryWallBackdropBlur: true,
+        });
+
+        const restored = decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(config))));
+        expect(restored).toMatchObject({
+            libraryWallSeamClear: true,
+            libraryWallSeamStyle: 'contour',
+            libraryWallBackdropLyrics: true,
+            libraryWallBackdropBlur: true,
+        });
+        // A hand-written minified config carrying only these is recognised as the minified shape.
+        expect(decompressConfig(JSON.stringify({ lwss: 'white' }))).toMatchObject({ libraryWallSeamStyle: 'white' });
+        expect(decompressConfig(JSON.stringify({ lwsc: false, lwbl: false, lwbb: true }))).toMatchObject({
+            libraryWallSeamClear: false,
+            libraryWallBackdropLyrics: false,
+            libraryWallBackdropBlur: true,
+        });
+        expect(decompressConfig(JSON.stringify({ libraryWallSeamStyle: 'hatch' }))).toMatchObject({ libraryWallSeamStyle: 'hatch' });
+        useLibraryWallLookStore.setState({ seamClear: false, seamStyle: 'paper', backdropLyrics: false, backdropBlur: false });
+    });
+
+    // Numbering only the playing song on both tile walls (#930) travels with the look (short code lbco); false is a real value.
+    it('carries numbering only the playing song', () => {
+        useLatticeSettingsStore.setState({ latticeBadgeCurrentOnly: true });
+
+        const config = buildVisualSettingsConfig();
+        expect(config.latticeBadgeCurrentOnly).toBe(true);
+
+        const restored = decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(config))));
+        expect(restored.latticeBadgeCurrentOnly).toBe(true);
+        expect(decompressConfig(JSON.stringify({ lbco: false }))).toMatchObject({ latticeBadgeCurrentOnly: false });
+        expect(decompressConfig(JSON.stringify({ latticeBadgeCurrentOnly: true }))).toMatchObject({ latticeBadgeCurrentOnly: true });
+    });
+
+    // Which way the info strip opens (auto / vertical / horizontal) travels with the look (short code lwsd).
+    it('carries the info strip direction', () => {
+        useLibraryWallLookStore.setState({ seamDirection: 'horizontal' });
+        const config = buildVisualSettingsConfig();
+        expect(config.libraryWallSeamDirection).toBe('horizontal');
+        expect(decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(config))))).toMatchObject({ libraryWallSeamDirection: 'horizontal' });
+        expect(decompressConfig(JSON.stringify({ lwsd: 'vertical' }))).toEqual({ libraryWallSeamDirection: 'vertical' });
+        expect(decompressConfig(JSON.stringify({ libraryWallSeamDirection: 'auto' }))).toMatchObject({ libraryWallSeamDirection: 'auto' });
+        useLibraryWallLookStore.setState({ seamDirection: 'auto' });
+    });
+
+    // The frosted bar behind the player page's titlebar travels with the look (short code phb);
+    // false is a real value, so a config can turn someone's bar off.
+    it('carries the blurred player header', () => {
+        usePlayerChromeSettingsStore.setState({ playerHeaderBlur: true });
+        const config = buildVisualSettingsConfig();
+        expect(config.playerHeaderBlur).toBe(true);
+        expect(decompressConfig(extractCfgFromInput(asObsUrl(compressConfig(config))))).toMatchObject({ playerHeaderBlur: true });
+        expect(decompressConfig(JSON.stringify({ phb: false }))).toEqual({ playerHeaderBlur: false });
+        expect(decompressConfig(JSON.stringify({ playerHeaderBlur: true }))).toMatchObject({ playerHeaderBlur: true });
+        usePlayerChromeSettingsStore.setState({ playerHeaderBlur: false });
     });
 });

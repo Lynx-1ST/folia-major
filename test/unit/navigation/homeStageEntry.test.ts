@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, expect, it, vi } from 'vitest';
 import { PlayerState, type Theme } from '@/types';
 import { buildHomeModel } from '@/components/app/home/buildHomeModel';
-import type { LibraryAccountController } from '@/library/core/contracts/account';
+import type { LibraryAccountController } from '@/library/core/account/account.contract';
 
 // test/unit/navigation/homeStageEntry.test.ts
 
@@ -33,6 +33,8 @@ const createBaseParams = () => {
         playSong: vi.fn(),
         navigateToPlayer: vi.fn(),
         navigateToLattice: vi.fn(),
+        togglePlayback: vi.fn(),
+        enterPlaybackView: vi.fn(),
         refreshOnlineProviderPlaylists: vi.fn().mockResolvedValue(undefined),
         user: null,
         playlists: [],
@@ -57,6 +59,7 @@ const createBaseParams = () => {
             entities: [],
             assignments: [],
             ready: true,
+            failed: false,
             reload: vi.fn().mockResolvedValue(undefined),
         },
         localPlaylists: [],
@@ -83,6 +86,7 @@ const createBaseParams = () => {
         theme,
         navidromeEnabled: false,
         playAll: vi.fn(),
+        shufflePlayAll: vi.fn(),
         addAllToQueue: vi.fn(),
         addSongToQueue: vi.fn(),
         onOpenCollection: vi.fn(),

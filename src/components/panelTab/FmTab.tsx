@@ -1,122 +1,140 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Play, Pause, SkipBack, SkipForward, Heart, Trash2, Radio } from 'lucide-react';
+import { ChevronDown, PanelsTopLeft, Pause, Play, Radio, SkipBack, SkipForward, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PlayerState } from '../../types';
+import { omni } from '../../services/onlineMusic/omni';
+import { getPersonalFmOpenPickerLabel } from '../../services/onlineMusic/fmModes';
+import { useOnlineProviderAccountStore } from '../../stores/useOnlineProviderAccountStore';
+import { selectActiveStation, selectStationCatalog, usePersonalFmModeStore } from '../../stores/usePersonalFmModeStore';
+import { usePlaybackStore } from '../../stores/usePlaybackStore';
+import { getPlaybackSourceRef } from '../../utils/appPlaybackGuards';
+import { Tooltip } from '../modal/settings/kit';
+import { IconSwap } from './shell/IconSwap';
+import { LikeButton } from './shell/LikeButton';
+import { PanelButton } from './shell/PanelButton';
+import { PanelIconButton } from './shell/PanelIconButton';
+import { FmRecommendationPreferencesButton } from '../recommendationPreferences/FmRecommendationPreferencesButton';
+
+// src/components/panelTab/FmTab.tsx
+// The panel's radio tab, shown in place of the queue while a personal FM plays: the mode the radio
+// is in, and under it one line with its controls: 删除 / 不喜欢 at the left, previous, play or pause
+// and next in the middle, the heart at the right.
 
 interface FmTabProps {
     playerState: PlayerState;
     modeLabel: string;
     /** Absent when the active provider has no FM modes, which hides the entry entirely. */
     onOpenModePicker?: () => void;
+    /** 打开 Lattice（私人 FM 下是电台墙）；队列页签的同一个入口，FM 时队列页签被这一页换掉。 */
+    onOpenLattice?: () => void;
     onTogglePlay: () => void;
     onNextTrack: () => void;
     onPrevTrack: () => void;
     onTrash: () => void;
+    /** provider 没有「不喜欢」时置灰（QQ、波点）。 */
+    trashDisabled?: boolean;
     onLike: () => void;
     isLiked: boolean;
     likeDisabled?: boolean;
     likeDisabledReason?: string;
-    isDaylight?: boolean;
-    primaryColor?: string;
 }
 
 const FmTab: React.FC<FmTabProps> = ({
     playerState,
     modeLabel,
     onOpenModePicker,
+    onOpenLattice,
     onTogglePlay,
     onNextTrack,
     onPrevTrack,
     onTrash,
+    trashDisabled = false,
     onLike,
     isLiked,
     likeDisabled = false,
     likeDisabledReason,
-    isDaylight = false,
-    primaryColor = 'var(--text-primary)'
 }) => {
     const { t } = useTranslation();
-    const btnBg = isDaylight ? 'bg-black/5 hover:bg-black/10 text-black/80' : 'bg-white/10 hover:bg-white/20 text-white/80';
-    const mainBtnBg = isDaylight ? 'bg-black/90 text-white hover:scale-105 transition-all' : 'bg-white text-black hover:scale-105 transition-all';
+    // A song of a provider that has no like at all (`capabilities.likes`) gets no heart here: greyed
+    // out it could never be pressed. Any other reason to grey the heart out passes, and it stays.
+    const hasLike = usePlaybackStore(state => !state.currentSong
+        || getPlaybackSourceRef(state.currentSong).kind !== 'online'
+        || omni.canLikeSong(state.currentSong));
+    // The button opens the picker of what FM plays, so its hint names the same thing: the extra radio on air
+    // by its own name, the Personal FM otherwise.
+    const providerId = useOnlineProviderAccountStore(state => state.activeProviderId);
+    const isFmMode = usePlaybackStore(state => state.isFmMode);
+    const stationCatalog = usePersonalFmModeStore(state => {
+        const station = isFmMode ? selectActiveStation(state, providerId) : null;
+        return station ? selectStationCatalog(state, providerId, station.id) : undefined;
+    });
+    // 账号的偏好是私人 FM 的入口；额外电台播着时这一行只放电台自己的模式按钮。
+    const isStationOnAir = usePersonalFmModeStore(state => isFmMode && selectActiveStation(state, providerId) !== null);
+    const isPlaying = playerState === PlayerState.PLAYING;
+    const playLabel = isPlaying ? t('player.pause') : t('player.play');
 
     return (
-        <div className="flex flex-col items-center justify-center p-6 space-y-6 h-full min-h-[160px]">
+        <div className="flex flex-col items-center gap-3.5 px-1 pb-1.5 pt-2.5">
+            {/* 平台声明了私人 FM 的偏好入口才有；它的私人 FM 没有模式时，这一行就只有它。播额外电台时不放。 */}
+            {!isStationOnAir && <FmRecommendationPreferencesButton />}
             {/* Opens the command palette's FM mode picker: the same surface the palette offers, so
                 the mode lives in one place instead of being reimplemented inside the panel. */}
-            {onOpenModePicker && (
-                <button
-                    onClick={onOpenModePicker}
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors ${btnBg}`}
-                    title={t('personalFmMode.openPicker', 'Switch the Personal FM mode')}
-                >
-                    <Radio size={13} />
-                    <span>{modeLabel}</span>
-                </button>
+            {/* 右边是去 Lattice 的入口（电台墙），和队列页签上那颗同一个图标。 */}
+            {(onOpenModePicker || onOpenLattice) && (
+                <div className="flex max-w-full items-center gap-1.5">
+                    {onOpenModePicker && (
+                        <Tooltip text={getPersonalFmOpenPickerLabel(stationCatalog)} className="inline-flex min-w-0 max-w-full">
+                            <PanelButton icon={Radio} onClick={onOpenModePicker}>
+                                {modeLabel}
+                                <ChevronDown size={13} className="text-[color:var(--st-t2)]" />
+                            </PanelButton>
+                        </Tooltip>
+                    )}
+                    {onOpenLattice && (
+                        <PanelIconButton size="m" label={t('home.lattice')} onClick={onOpenLattice}>
+                            <PanelsTopLeft size={17} />
+                        </PanelIconButton>
+                    )}
+                </div>
             )}
 
-            <div className="flex items-center justify-center gap-6 w-full max-w-sm">
+            {/* Three columns, so play stays in the middle of the line when there is no heart. */}
+            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+                <PanelIconButton size="l" label={t('ui.trashDislike')} onClick={onTrash} disabled={trashDisabled} className="justify-self-start">
+                    <Trash2 size={19} />
+                </PanelIconButton>
 
-                {/* Previous (Disabled by default typically for FM, but requested) */}
-                <button
-                    onClick={onPrevTrack}
-                    className={`p-3 rounded-full transition-colors opacity-50 hover:opacity-100 ${btnBg}`}
-                    title={t('ui.previousTrack')}
-                >
-                    <SkipBack size={24} />
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* Previous (Disabled by default typically for FM, but requested) */}
+                    <PanelIconButton size="l" label={t('ui.previousTrack')} onClick={onPrevTrack} className="opacity-50">
+                        <SkipBack size={20} />
+                    </PanelIconButton>
+                    <Tooltip text={playLabel} className="inline-flex shrink-0">
+                        <button
+                            type="button"
+                            aria-label={playLabel}
+                            onClick={onTogglePlay}
+                            className="st-t-fast grid h-[52px] w-[52px] place-items-center rounded-full bg-[var(--st-accent)] text-[color:var(--st-on-accent)] transition-[opacity,scale] hover:opacity-90 active:scale-[0.96]"
+                        >
+                            <IconSwap name={isPlaying ? 'pause' : 'play'}>
+                                {isPlaying
+                                    ? <Pause size={22} fill="currentColor" />
+                                    : <Play size={22} fill="currentColor" className="ml-0.5" />}
+                            </IconSwap>
+                        </button>
+                    </Tooltip>
+                    <PanelIconButton size="l" label={t('ui.nextTrack')} onClick={onNextTrack}>
+                        <SkipForward size={20} />
+                    </PanelIconButton>
+                </div>
 
-                {/* Play/Pause Main Button */}
-                <button
-                    onClick={onTogglePlay}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center shadow-xl ${mainBtnBg}`}
-                    style={!isDaylight ? { backgroundColor: primaryColor, color: 'var(--bg-color)' } : {}}
-                    title={playerState === PlayerState.PLAYING ? t('player.pause') : t('player.play')}
-                >
-                    {playerState === PlayerState.PLAYING ? (
-                        <Pause size={28} fill="currentColor" />
-                    ) : (
-                        <Play size={28} fill="currentColor" className="ml-1" />
-                    )}
-                </button>
-
-                {/* Next Button */}
-                <button
-                    onClick={onNextTrack}
-                    className={`p-3 rounded-full transition-colors opacity-50 hover:opacity-100 ${btnBg}`}
-                    title={t('ui.nextTrack')}
-                >
-                    <SkipForward size={24} />
-                </button>
-            </div>
-
-            {/* Secondary Actions Row */}
-            <div className="flex items-center justify-center gap-10 mt-6 w-full">
-                {/* Trash Button */}
-                <button
-                    onClick={onTrash}
-                    className={`flex flex-col items-center gap-2 group opacity-50 hover:opacity-100 transition-opacity`}
-                    title={t('ui.trashDislike')}
-                    style={{ color: 'var(--text-primary)' }}
-                >
-                    <div className={`p-3 rounded-full transition-colors ${btnBg} group-hover:bg-red-500/20 group-hover:text-red-500`}>
-                        <Trash2 size={24} />
-                    </div>
-                </button>
-
-                {/* Like Button */}
-                <button
-                    onClick={onLike}
-                    disabled={likeDisabled}
-                    className={`flex flex-col items-center gap-2 group transition-opacity ${isLiked ? 'opacity-100' : 'opacity-50 hover:opacity-100'} disabled:cursor-not-allowed disabled:opacity-30`}
-                    title={likeDisabledReason || (isLiked ? t('player.unlike') : t('player.like'))}
-                    aria-label={likeDisabledReason || (isLiked ? t('player.unlike') : t('player.like'))}
-                    style={{ color: isLiked ? '#ef4444' : 'var(--text-primary)' }}
-                >
-                    <div className={`p-3 rounded-full transition-colors ${btnBg} ${isLiked ? 'bg-red-500/20' : ''}`}>
-                        <Heart size={24} fill={isLiked ? '#ef4444' : 'transparent'} className={isLiked ? 'text-red-500' : ''} />
-                    </div>
-                </button>
+                {hasLike && (
+                    <LikeButton
+                        size="l"
+                        like={{ isLiked, onLike, disabled: likeDisabled, disabledReason: likeDisabledReason }}
+                        className="justify-self-end"
+                    />
+                )}
             </div>
         </div>
     );

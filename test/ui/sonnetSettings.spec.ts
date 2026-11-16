@@ -9,7 +9,8 @@ import { APP_VERSION, waitForAppMounted } from '../helpers/appState';
 test('enters Sonnet from settings and exposes its layer controls', async ({ page }) => {
     await page.addInitScript((version) => {
         localStorage.clear();
-        localStorage.setItem('i18nextLng', 'en');
+        localStorage.setItem('library_suite_prompt_seen', 'true');
+        localStorage.setItem('folia_app_language', 'en');
         localStorage.setItem('visualizer_mode', 'classic');
         localStorage.setItem('static_mode', 'true');
         localStorage.setItem('folia_last_seen_ponder_onboarding_version', version);
@@ -25,7 +26,7 @@ test('enters Sonnet from settings and exposes its layer controls', async ({ page
         useSettingsModalStore.getState().openSettings('options', 'visualizer', 'visualizer');
     });
 
-    const sonnetMode = page.getByRole('button', { name: 'Sonnet', exact: true });
+    const sonnetMode = page.getByRole('radio', { name: 'Sonnet', exact: true });
     await expect(sonnetMode).toBeVisible();
     await sonnetMode.click();
 

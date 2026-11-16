@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import FmTab from '../../src/components/panelTab/FmTab';
+import { panelTokens } from '../../src/components/panelTab/shell/panelTheme';
+import { DAYLIGHT_THEME, DEFAULT_THEME } from '../../src/services/baseThemes';
 import { PlayerState } from '../../src/types';
 import type { ProbeDefinition } from './definition';
 // dev/probes/fmTab.probe.tsx
@@ -31,19 +33,22 @@ const FmTabProbe: React.FC = () => {
                     toggle fm modes
                 </button>
             </div>
-            <div className="w-[360px] rounded-2xl border border-white/10">
+            {/* 面板的颜色和动效变量平时由面板外框给，探针里自己给。 */}
+            <div
+                className="st-window w-[360px] rounded-2xl border border-white/10 p-3"
+                style={panelTokens(isDaylight, isDaylight ? DAYLIGHT_THEME : DEFAULT_THEME, false)}
+            >
                 <FmTab
                     playerState={PlayerState.PLAYING}
                     modeLabel="场景 · 助眠"
                     onOpenModePicker={supported ? () => setOpenCount(count => count + 1) : undefined}
+                    onOpenLattice={() => {}}
                     onTogglePlay={() => {}}
                     onNextTrack={() => {}}
                     onPrevTrack={() => {}}
                     onTrash={() => {}}
                     onLike={() => {}}
                     isLiked={false}
-                    isDaylight={isDaylight}
-                    primaryColor="#7dd3fc"
                 />
             </div>
         </div>

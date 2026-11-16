@@ -1,5 +1,6 @@
 import type { LocalSong } from '../../types';
 import { isBlob } from '../../utils/blobGuards';
+import { getLocalSongAlbumContextKey } from '../../utils/localLibraryNames';
 import { migrateLocalSongsRenderHints, migrateMatchedLyricsCarrierRenderHints } from '../../utils/lyrics/storageMigration';
 import { appDatabase } from '../appDatabase';
 
@@ -8,10 +9,18 @@ import { appDatabase } from '../appDatabase';
 
 export const sanitizeLocalSongForStorage = (song: LocalSong): LocalSong => {
   const normalizedSong = migrateMatchedLyricsCarrierRenderHints(song).value ?? song;
-  const { fileHandle, embeddedCover: _legacyCover, ...persistedSong } = normalizedSong as LocalSong & {
+  const { fileHandle, embeddedCover: _legacyCover, albumContextKey: _staleKey, ...persistedSong } = normalizedSong as LocalSong & {
     embeddedCover?: unknown;
   };
-  return persistedSong;
+  // Recomputed on every write: the imported album or the path may have changed since the key was read.
+  // A record missing those fields still saves, only without the key (as the v1 upgrade treats it).
+  let albumContextKey: string | undefined;
+  try {
+    albumContextKey = getLocalSongAlbumContextKey(persistedSong);
+  } catch {
+    albumContextKey = undefined;
+  }
+  return albumContextKey ? { ...persistedSong, albumContextKey } : persistedSong;
 };
 
 const normalizeLocalSongFromStorage = (song: LocalSong): { value: LocalSong; changed: boolean } => {
@@ -32,8 +41,8 @@ export const putLocalSongs = async (songs: LocalSong[]): Promise<void> => {
   }
 };
 
-export const readLocalSongs = async (): Promise<LocalSong[]> => {
-  const storedSongs = await appDatabase.local_music.toArray();
+// Applies the read-time cover sanitization and lyric render-hint migration, writing changed records back in the background.
+const migrateStoredLocalSongs = (storedSongs: LocalSong[]): LocalSong[] => {
   const normalized = storedSongs.map(normalizeLocalSongFromStorage);
   const sanitizedSongs = normalized.filter(item => item.changed).map(item => item.value);
   if (sanitizedSongs.length > 0) {
@@ -49,6 +58,16 @@ export const readLocalSongs = async (): Promise<LocalSong[]> => {
     });
   }
   return migration.value;
+};
+
+export const readLocalSongs = async (): Promise<LocalSong[]> => (
+  migrateStoredLocalSongs(await appDatabase.local_music.toArray())
+);
+
+// 按主键读一条记录，读时迁移与 readLocalSongs 一致；播放和匹配路径只关心一首歌时用它，不读整张表。
+export const readLocalSong = async (id: string): Promise<LocalSong | undefined> => {
+  const storedSong = await appDatabase.local_music.get(id);
+  return storedSong ? migrateStoredLocalSongs([storedSong])[0] : undefined;
 };
 
 export const removeLocalSong = async (id: string): Promise<void> => {

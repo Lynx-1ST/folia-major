@@ -4,14 +4,14 @@ import type { Line, Theme } from '../../../types';
 import { createRng } from './lumiereRandom';
 import { resolveThemeFontStack, resolveThemeFontWeight } from '../../../utils/fontStacks';
 import type { LumiereAudioFrame, TransformParams } from './lumiereKernel';
-import { createBloomFilter, type BloomFilter } from './light/bloomFilter';
+import { createBloomFilter, type BloomFilter } from '../pixi/bloomFilter';
 import { BURST_DURATION, burstLightBoost, createCrossBurst, MAX_BURSTS, planBursts, type BurstEvent } from './light/crossBurst';
 import { createLightField } from './light/lightFieldShader';
 import { createMotes, type MotesLayer } from './light/motes';
 import { MAX_BEAMS, resolveBeams, type LightRig, type ResolvedBeam } from './light/rig';
 import { createStarfall, starfallIgnition } from './light/starfall';
 import type { LightSprites } from './light/sprites';
-import { createLineArt, type LineArtLayer } from './lineart/lineArt';
+import { createLineArt, showLineArtLayer, type LineArtLayer } from './lineart/lineArt';
 import { buildShotIconArts } from './lineart/themeIcons';
 import { keywordBurstColor, prepareLumiereKeywords } from './text/keywordColors';
 import { createLyricEcho } from './text/lyricEcho';
@@ -354,6 +354,9 @@ export const createLumiereScene = (pixi: PixiModule, options: LumiereSceneOption
     });
     const graphicsBloom = bloomOf(LUMIERE_BLOOM.graphics, tuning.bloom, 0);
     const textBloom = bloomOf(LUMIERE_BLOOM.text, tuning.textBloom, 0);
+    // 抗锯齿跟随画布（样式的抗锯齿设置，跟随全局或单独指定）：Pixi 的默认是 off，这两组先画进的离屏纹理吃不到画布的 MSAA。
+    graphicsBloom.antialias = 'inherit';
+    textBloom.antialias = 'inherit';
     // 文字组的 bloom 区域必须固定在画面上：不给 filterArea 时 Pixi 每帧按内容包围盒取区域（取整到像素），
     // 字一动，降采样金字塔的网格原点与纹理尺寸就跟着跳，1/32 级的光晕相对字来回错位，看起来一直在抖。
     // 给一块远大于画面的区域，经运镜变换后被视口裁剪，结果每帧都正好是整个视口。区域已覆盖全画面，所以不再加 padding。
@@ -469,13 +472,15 @@ export const createLumiereScene = (pixi: PixiModule, options: LumiereSceneOption
                 // 下次出现：还没开始描就是 begin，窗口里就是现在；淡出之后顺放不会再出现（回拖回来会重新 update）。
                 // 藏着的线稿交给 idle 按滞回放掉 GPU 数据——轨迹过渡整首一个单元时，画过的镜头线稿不然会一直占着缓冲。
                 const nextUse = time < begin ? begin : time <= shot.endTime + 0.8 ? time : Number.POSITIVE_INFINITY;
-                layer.view.visible = fade > 0.003;
-                if (layer.view.visible) layer.update(time, draw, fade, beams, lightHex);
+                const artShown = fade > 0.003;
+                showLineArtLayer(lineArtHolder, lineArts, shotIndex, artShown);
+                if (artShown) layer.update(time, draw, fade, beams, lightHex);
                 else layer.idle(time, nextUse);
                 const icons = iconArts[shotIndex];
                 if (icons) {
-                    icons.view.visible = base > 0.003;
-                    if (icons.view.visible) icons.update(time, draw, base, beams, lightHex);
+                    const iconsShown = base > 0.003;
+                    showLineArtLayer(iconHolder, iconArts, shotIndex, iconsShown);
+                    if (iconsShown) icons.update(time, draw, base, beams, lightHex);
                     else icons.idle(time, nextUse);
                 }
             });

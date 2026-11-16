@@ -21,6 +21,8 @@ export type ProbeSurfaceCallbacks = Pick<
     | 'onAddNavidromeSongsToQueue'
     | 'onStatusMessage'
     | 'onBackToPlayer'
+    | 'onTogglePlayback'
+    | 'onEnterPlaybackView'
 >;
 
 /**
@@ -44,7 +46,11 @@ export const PROBE_SURFACE_CALLBACKS: ProbeSurfaceCallbacks = {
         queueIds: probeSongKeys(queue),
         ...(isFmCall ? { isFm: true } : {}),
     }),
-    onPlayAll: songs => recordProbeCall({ kind: 'playAll', ids: probeSongKeys(songs) }),
+    onPlayAll: (songs, _from, options) => recordProbeCall({
+        kind: 'playAll',
+        ids: probeSongKeys(songs),
+        ...(options?.shuffle ? { shuffle: true } : {}),
+    }),
     onAddAllToQueue: (songs, options) => {
         const keys = probeSongKeys(songs);
         const added = keys.filter(key => !probeQueue.has(key));
@@ -67,5 +73,8 @@ export const PROBE_SURFACE_CALLBACKS: ProbeSurfaceCallbacks = {
         ids: songs.map(song => song.navidromeData?.id ?? String(song.id)),
     }),
     onStatusMessage: message => recordProbeCall({ kind: 'statusMessage', ids: [], text: message.text, status: message.type }),
-    onBackToPlayer: () => {},
+    onBackToPlayer: () => recordProbeCall({ kind: 'backToPlayer', ids: [] }),
+    // fb3：只记账（播放状态由用例经 __homeProbe.setNowPlaying 摆）。
+    onTogglePlayback: () => recordProbeCall({ kind: 'togglePlayback', ids: [] }),
+    onEnterPlaybackView: () => recordProbeCall({ kind: 'enterPlaybackView', ids: [] }),
 };

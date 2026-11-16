@@ -7,13 +7,13 @@ import type {
     LibrarySuiteTransitions,
     LibrarySurfaceId,
     LibrarySurfacePropsMap,
-} from './core/contracts/suite';
-import { buildLibrarySuiteIndex, DEFAULT_LIBRARY_SUITE_ID, isLibrarySuiteChoiceAvailable } from './core/model/librarySuites';
+} from './core/suite/suite.contract';
+import { buildLibrarySuiteIndex, DEFAULT_LIBRARY_SUITE_ID, isLibrarySuiteChoiceAvailable } from './core/suite/librarySuites';
 
 // src/library/registry.ts
 // Library 的 suite 注册表：从各 suite 的 `suites/<id>/entry.ts` 自动发现（照 visualizer registry 的做法，
 // eager glob；entry 里除默认 suite 外的组件必须是 React.lazy），按 surface 与当前选中的 suite 解析由谁渲染——
-// 选中的 suite 没实现就回退默认 suite（grid）。纯规则在 core/model/librarySuites，这里只做发现与类型还原。
+// 选中的 suite 没实现就回退默认 suite（grid）。纯规则在 core/suite/librarySuites，这里只做发现与类型还原。
 // 只有 UI 侧（首页外壳、集合宿主、suite 切换、DEV 浮层、探针）引用它；core 与 stores 不碰。
 
 type LibrarySuiteEntryModule = { default?: LibrarySuiteManifest };
@@ -115,6 +115,15 @@ export const resolveLibraryStage = (suiteId: string): ResolvedLibraryStage | nul
     // 契约里的组件只是结构化的最小类型；entry 里放的是 React 组件（非默认 suite 为 lazy），这里只还原类型。
     SUITE_INDEX.resolveStage(suiteId) as unknown as ResolvedLibraryStage | null
 );
+
+/**
+ * 生效 suite 的 stage 是否参与与 Lattice 的翻牌交接（manifest 的 stageWallHandoff）。离开 Lattice 回首页的那一刻
+ * stage 还没挂上，App 的交接 director 用它决定要不要让 Lattice 留着等 stage 接手；没有 stage（grid / TUI）时为 false。
+ */
+export const libraryStageHandsOffWall = (suiteId: string): boolean => {
+    const stage = resolveLibraryStage(suiteId);
+    return Boolean(stage && SUITE_INDEX.get(stage.suiteId)?.stageWallHandoff);
+};
 
 /**
  * 「完成」（返回按钮）时忘掉这一层的布局记录：问**每一套**可用的 suite，不只是正在渲染它的那套

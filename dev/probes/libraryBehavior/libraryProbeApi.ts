@@ -1,13 +1,13 @@
 import { useAppViewStore } from '../../../src/stores/useAppViewStore';
 import { useGridSurfaceStore } from '../../../src/stores/useGridSurfaceStore';
 import { useCollectionNavigationStore } from '../../../src/stores/useCollectionNavigationStore';
-import { useLibrarySuiteStore } from '../../../src/library/core/state/useLibrarySuiteStore';
-import { useLibraryArtistSurfaceStore } from '../../../src/library/core/state/useLibraryArtistSurfaceStore';
-import { useLibraryBrowseSessionStore } from '../../../src/library/core/state/useLibraryBrowseSessionStore';
+import { useLibrarySuiteStore } from '../../../src/library/core/suite/useLibrarySuiteStore';
+import { useLibraryArtistSurfaceStore } from '../../../src/library/core/artist/useLibraryArtistSurfaceStore';
+import { useLibraryBrowseSessionStore } from '../../../src/library/core/shared/useLibraryBrowseSessionStore';
 import { switchLibrarySuite } from '../../../src/library/app/switchLibrarySuite';
 import { listLibrarySuites, resolveLibrarySurface } from '../../../src/library/registry';
-import type { LibrarySuiteId } from '../../../src/library/core/contracts/suite';
-import { collectionKey } from '../../../src/library/core/model/collectionIdentity';
+import type { LibrarySuiteId } from '../../../src/library/core/suite/suite.contract';
+import { collectionKey } from '../../../src/library/core/collection/collectionIdentity';
 import type { LibraryProbeApi } from './probeApi';
 import { clearProbeCalls, clearProbeRequests, getProbeLog } from './probeLog';
 import {
@@ -35,7 +35,7 @@ import { openArtistAlbum, openArtistPanel, readArtistFocus, readArtistGridFocus,
 // 把探针的驱动接口挂到 window 上。查询、动作都经由真实的注册点（命令筛选、grid surface），
 // 用的是命令面板同一条通道，所以它测到的就是命令面板能做到的事。
 
-type HarnessBindings = Pick<LibraryProbeApi, 'sandbox' | 'fixtures' | 'ready' | 'open' | 'back' | 'pushArtist' | 'openArtist' | 'refreshLocal'>;
+type HarnessBindings = Pick<LibraryProbeApi, 'sandbox' | 'fixtures' | 'ready' | 'open' | 'back' | 'push' | 'pushArtist' | 'openArtist' | 'refreshLocal'>;
 
 const setSuite = (suite: LibrarySuiteId) => {
     const stack = useCollectionNavigationStore.getState().snapshot?.stack ?? [];

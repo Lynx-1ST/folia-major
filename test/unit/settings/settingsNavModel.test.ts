@@ -3,17 +3,17 @@ import { SETTINGS_ANCHOR_DEFINITIONS } from '../../../src/components/modal/setti
 import { SETTINGS_NAV_GROUP_SPECS, buildSettingsNavGroups, findSettingsNavItem, flattenSettingsNavItems, type SettingsSectionId } from '../../../src/components/modal/settings/navigation/settingsNavModel';
 import en from '../../../src/i18n/locales/en';
 import zhCN from '../../../src/i18n/locales/zh-CN';
-import vietnamese from '../../../src/i18n/locales/vi';
 import id from '../../../src/i18n/locales/in';
 
 // test/unit/settings/settingsNavModel.test.ts
-// The nav model replaced four parallel id-keyed lists in SettingsModal; these lock in that every
-// section still appears exactly once and that every key it points at actually exists in all locales.
+// The nav model is the one list of settings categories; these lock in that every category appears
+// exactly once, that every place other code can open belongs to one of them, and that every key the
+// model points at exists in all locales.
 
 const echo = (key: string) => key;
 
 const ALL_SECTIONS: SettingsSectionId[] = [
-    'appearance', 'general', 'playback', 'interaction', 'integration', 'storage', 'desktop', 'graphics', 'mods', 'lab', 'developer',
+    'appearance', 'player', 'home', 'graphics', 'playback', 'lyrics', 'general', 'interaction', 'integration', 'ai', 'storage', 'desktop', 'remote', 'mods', 'developer',
 ];
 
 const lookup = (bundle: Record<string, unknown>, key: string): unknown => (
@@ -23,24 +23,24 @@ const lookup = (bundle: Record<string, unknown>, key: string): unknown => (
 );
 
 describe('settingsNavModel', () => {
-    it('lists every section exactly once on desktop', () => {
+    it('lists every section exactly once on desktop, in side-list order', () => {
         const ids = flattenSettingsNavItems(buildSettingsNavGroups(echo, { isElectron: true })).map(item => item.id);
-        expect([...ids].sort()).toEqual([...ALL_SECTIONS].sort());
+        expect(ids).toEqual(ALL_SECTIONS);
     });
 
     it('drops desktop-only sections on web without leaving an empty group', () => {
         const groups = buildSettingsNavGroups(echo, { isElectron: false });
         const ids = flattenSettingsNavItems(groups).map(item => item.id);
+        // 桌面专属的分组数不是写死的：每加一个 electronOnly 分类（AI 服务就是这样一个），
+        // 网页版就少一项，断言跟着模型走才不会被下一次新增弄成假失败。
+        const desktopOnlyCount = SETTINGS_NAV_GROUP_SPECS.flatMap(group => group.sections)
+            .filter(section => section.electronOnly).length;
 
         expect(ids).not.toContain('desktop');
         expect(ids).not.toContain('mods');
-        expect(ids).toHaveLength(ALL_SECTIONS.length - 2);
+        expect(ids).not.toContain('ai');
+        expect(ids).toHaveLength(ALL_SECTIONS.length - desktopOnlyCount);
         expect(groups.every(group => group.items.length > 0)).toBe(true);
-    });
-
-    it('keeps the section order the flat sidebar list used', () => {
-        const ids = flattenSettingsNavItems(buildSettingsNavGroups(echo, { isElectron: true })).map(item => item.id);
-        expect(ids).toEqual(ALL_SECTIONS);
     });
 
     it('resolves a nav item for every section id', () => {
@@ -50,31 +50,18 @@ describe('settingsNavModel', () => {
         }
     });
 
-    it('expands every declared anchor under its owning section', () => {
-        const items = flattenSettingsNavItems(buildSettingsNavGroups(echo, { isElectron: true, hasLibrarySuiteChoice: true }));
-        const rendered = items.flatMap(item => item.anchors.map(anchor => [anchor.id, item.id]));
-        const declared = Object.entries(SETTINGS_ANCHOR_DEFINITIONS).map(([id, definition]) => [id, definition.section]);
-
-        expect(rendered).toEqual(declared);
+    // A command or a link names an anchor; the table has to send it to a category that exists.
+    it('places every anchor in a category of the model', () => {
+        for (const [anchorId, definition] of Object.entries(SETTINGS_ANCHOR_DEFINITIONS)) {
+            expect(ALL_SECTIONS, `${anchorId} → ${definition.section}`).toContain(definition.section);
+        }
     });
 
-    it('lists the library suite anchor only when there is a suite to choose (its section renders nothing otherwise)', () => {
-        const anchorsOf = (hasLibrarySuiteChoice: boolean) => findSettingsNavItem(
-            buildSettingsNavGroups(echo, { isElectron: false, hasLibrarySuiteChoice }),
-            'general',
-        )?.anchors.map(anchor => anchor.id);
-
-        expect(anchorsOf(true)).toContain('librarySuite');
-        expect(anchorsOf(false)).not.toContain('librarySuite');
-        expect(anchorsOf(false)).toContain('playbackEntryView');
-    });
-
-    it.each([['en', en], ['zh-CN', zhCN], ['in', id], ['vi', vietnamese]] as const)('has every label and description key in %s', (_name, bundle) => {
+    it.each([['en', en], ['zh-CN', zhCN], ['in', id]] as const)('has every label key in %s', (_name, bundle) => {
         const keys = SETTINGS_NAV_GROUP_SPECS.flatMap(group => [
             group.labelKey,
-            ...group.sections.flatMap(section => [section.labelKey, section.descriptionKey]),
+            ...group.sections.map(section => section.labelKey),
         ]);
-        keys.push(...Object.values(SETTINGS_ANCHOR_DEFINITIONS).map(definition => definition.labelKey));
 
         for (const key of keys) {
             expect(typeof lookup(bundle as unknown as Record<string, unknown>, key), `${key} missing`).toBe('string');

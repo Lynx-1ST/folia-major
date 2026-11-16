@@ -5,8 +5,9 @@ import { PINYIN_BY_PHRASE } from 'virtual:folia-command-pinyin';
 import { assertExecuteShortcutsArePrefixFree } from '../../../src/components/command-palette/executeShortcuts';
 import en from '../../../src/i18n/locales/en';
 import zhCN from '../../../src/i18n/locales/zh-CN';
+import zhTW from 'virtual:folia-locale-zh-TW';
 import id from '../../../src/i18n/locales/in';
-import vietnamese from '../../../src/i18n/locales/vi';
+import vi from '../../../src/i18n/locales/vi';
 import { buildSuiteChromeCommands } from '../../../src/components/command-palette/commands/suiteChromeCommands';
 import { listLibrarySuites } from '../../../src/library/registry';
 import { findKeywordOffenders, findUntranslatedCommands, listStaticCommands } from './commandContractChecks';
@@ -19,7 +20,7 @@ import { findKeywordOffenders, findUntranslatedCommands, listStaticCommands } fr
 // them itself from the registry. No shipped suite declares any yet; the same checks run over a fixture
 // suite in suiteChromeCommands.test.ts.
 
-const LOCALES = { en, 'zh-CN': zhCN, in: id, vi: vietnamese } as const;
+const LOCALES = { en, 'zh-CN': zhCN, 'zh-TW': zhTW, in: id, vi } as const;
 
 // The chrome commands every available suite declares, built the way the app installs them
 // (library/app/installLibrarySuiteChromeCommands), checked alongside the static list.
@@ -35,6 +36,15 @@ const CONTRACT_COMMANDS = [
 const staticCommands = listStaticCommands(CONTRACT_COMMANDS);
 
 describe('command palette registry contract', () => {
+    it('opens the desktop AI provider flow at its anchor on the AI service page', async () => {
+        const command = COMMAND_PALETTE_COMMANDS.find(item => item.id === 'settings-ai-provider')!;
+        expect(command.platform).toEqual(['electron']);
+        expect(command.settingsTarget).toEqual({ subview: 'ai', anchorId: 'electronSettings' });
+        const opened: unknown[][] = [];
+        await command.execute('', { settings: { openSettings: (...args: unknown[]) => opened.push(args) } } as unknown as Parameters<typeof command.execute>[1]);
+        expect(opened).toEqual([['options', 'ai', null, 'electronSettings']]);
+    });
+
     it('keeps command ids unique', () => {
         const seen = new Map<string, number>();
         CONTRACT_COMMANDS.forEach(command => {
@@ -48,9 +58,22 @@ describe('command palette registry contract', () => {
         expect(COMMAND_PALETTE_COMMANDS.map(command => command.id)).toMatchSnapshot();
     });
 
-    it('enumerates the chrome actions the available suites declare (none yet: grid and TUI declare none)', () => {
+    it('enumerates the chrome actions the available suites declare (bravais only: grid and TUI declare none)', () => {
         // B6 起 bravais 进 registry，这里列出它在 manifest 里声明的外观动作（`bravais-<动作 id>`）。
-        expect(SUITE_CHROME_COMMANDS.map(command => command.id)).toEqual([]);
+        expect(SUITE_CHROME_COMMANDS.map(command => command.id)).toEqual([
+            'bravais-seam-full',
+            'bravais-seam-spine',
+            'bravais-seam-hide',
+            'bravais-seam-here',
+            'bravais-list',
+            // B9：首页本地的目录树面板（批量模式）。
+            'bravais-directory',
+            'bravais-locate-playing',
+            // B6b③ 透光：循环档位、每块多开 / 少开一个窗。
+            'bravais-wall-look',
+            'bravais-more-windows',
+            'bravais-fewer-windows',
+        ]);
         expect(staticCommands).toEqual(expect.arrayContaining(SUITE_CHROME_COMMANDS));
     });
 
@@ -101,7 +124,7 @@ describe('command palette registry contract', () => {
         // 旧的「必须有拉丁关键词」真正想保证的东西：不会中文输入也能把每条命令搜出来。
         // 直接验结果，而不是验有没有那个字段。
         // 总体用「无 context 时实际可用的命令」，而不是全部静态命令：少数命令的 isAvailable
-        // 在没有 context 时刻意返回 false（playback-fm-mode 的 `?? false`），它们压根不进
+        // 在没有 context 时刻意返回 false（playback-fm-mode、playback-station-mode），它们压根不进
         // 可用集，搜不到是门控的结果而不是检索的缺陷。
         const reachablePopulation = getAvailableCommandPaletteCommands()
             .filter(command => command.textSource !== 'runtime' && !command.hidden);

@@ -11,6 +11,8 @@
 
 Lyrics Reimagined
 
+简体中文 | [English](README.en.md)
+
 [![GitHub release](https://img.shields.io/github/v/release/chthollyphile/folia-major?label=release)](https://github.com/chthollyphile/folia-major/releases)
 [![License](https://img.shields.io/github/license/chthollyphile/folia-major)](https://github.com/chthollyphile/folia-major/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/chthollyphile/folia-major?style=social)](https://github.com/chthollyphile/folia-major/stargazers)
@@ -33,13 +35,17 @@ Lyrics Reimagined
 
 ## About
 
-Folia is an online music player centered on immersive full-screen lyrics. It supports NetEase Cloud Music, KuGou, Navidrome, and local libraries, with intelligent lyric matching, AI-generated color themes, and a variety of lyric animations.
+Folia is an online music player centered on immersive full-screen lyrics. It supports NetEase Cloud Music, KuGou, QQ Music, Navidrome, and local libraries. The desktop app also supports Bodian Music, YouTube Music, Spotify, and Qishui Music, with intelligent lyric matching, AI-generated color themes, and a variety of lyric animations.
 
 Electron desktop releases are available for Windows, macOS, and Linux. The Node.js-based Web version can be deployed to Vercel or other platforms supporting Node.js for browser and mobile use.
 
 ## Showcase
 
 ![visualizer](./img/visualizer.png)
+
+### Online demo (community build)
+
+Try [folia-ce.cn](https://folia-ce.cn/), maintained by [folia-ce/folia-web](https://github.com/folia-ce/folia-web). This community build includes its own changes; report problems to that repository.
 
 ### Demo videos
 
@@ -132,11 +138,13 @@ Cloudflare one-click deployment is also supported; adapt the Vercel instructions
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chthollyphile/folia-major)
 
-For QQ Music on Vercel or Cloudflare, set `VITE_QQ_API_BASE` to `/api/qq` and configure `QQ_SESSION_SECRET` as a server-side secret **without a `VITE_` prefix**. A separate persistent API instance is unnecessary. By default, only WeChat QR login is supported, and login is required before playback. A Cloudflare Durable Object can additionally enable QQ QR login. See [QQ Music deployment](docs/qq-music-deployment.md) for steps, platform differences, and troubleshooting.
+For QQ Music on Vercel or Cloudflare, set `VITE_QQ_API_BASE` to `/api/qq` and configure `QQ_SESSION_SECRET` as a server-side secret **without a `VITE_` prefix**. A separate persistent API instance is unnecessary. WeChat and mobile QQ QR login are supported (mobile QQ requires qq-music-api 3.3.3 or later), and login is required before playback. A Cloudflare Durable Object can additionally use a persistent connection for QQ QR login and enable QQ Music app QR login. See [QQ Music deployment](docs/qq-music-deployment.md) for steps, platform differences, and troubleshooting.
 
 For self-hosting, use [Docker Compose](deploy/docker/README.md). Local music directory access requires a trusted HTTPS secure context; the guide covers NAS reverse proxies and certificates.
 
 On mobile, deploy or self-host the Web version and install it as a PWA by adding it to your home screen through Chrome for Android or Safari on iOS. Experienced users can package an Android APK with Capacitor; see [folia-sonnet](https://github.com/chthollyphile/folia-sonnet).
+
+Community Android ports: [folia-ce/folia-sonnet](https://github.com/folia-ce/folia-sonnet) and [whycfawa/folia-android](https://github.com/whycfawa/folia-android). These third-party projects may differ from the desktop app.
 
 ### Downloads
 
@@ -156,11 +164,11 @@ See [Folia Guide](https://folia-site.cielaniska.top/guide/) for usage instructio
 ## Mod system (Folium v1.x)
 
 > [!NOTE]
-> Mods are experimental, desktop-only, and disabled by default. Enable them under Settings → Lab → Mod system.
+> Mods are experimental, desktop-only, and disabled by default. Enable them under Settings → Mods → Mod system.
 
 Folium mods can add lyric animations and backgrounds, overlay playback-page content, add progress-bar buttons and markers, register commands and settings sections, transform lyrics before display, and invoke local tools such as ffmpeg through a Node entry point. Mods run as trusted code: each requires confirmation in a native window before activation and confirmation again after file changes.
 
-- **Marketplace:** [folium-compound.vercel.app](https://folium-compound.vercel.app) provides official and reviewed community mods. Download a ZIP and drag it into the mod panel.
+- **Marketplace:** [folium-compound.cielaniska.top](https://folium-compound.cielaniska.top) provides official and reviewed community mods. Download a ZIP and drag it into the mod panel.
 - **Certification:** Marketplace mods carry Folium signatures and appear as certified. Unsigned third-party mods appear as unverified and can still be used.
 - **Development:** [Contribution guide](docs/folium/contributing.md) covers authoring, debugging, submission, review, signing, and updates.
 - **API:** [API reference](docs/folium/api.md) is generated from contracts and organized by registries, contexts, events, and services.
@@ -176,7 +184,7 @@ The optional official `sync-server` synchronizes appearance settings and AI them
 - **Docker:** See [Docker deployment](deploy/docker/README.md) for images and Compose entry points.
 - **Node.js:** Uses SQLite, suitable for local setups or environments where Docker is inconvenient.
 
-Follow the [Sync Server deployment guide](https://folia-site.cielaniska.top/guide/deploy-sync) for environment variables, tokens, and deployment. Enter the server URL and `SYNC_TOKEN` in Folia's storage settings to enable sync.
+Follow the [Sync Server deployment guide](https://folia-site.cielaniska.top/guide/deploy-sync) for environment variables, tokens, and deployment. Enter the server URL and `SYNC_TOKEN` under Settings → Connections and integrations to enable sync.
 
 ## Local music and matching
 

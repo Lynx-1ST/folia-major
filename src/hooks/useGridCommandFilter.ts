@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { openCommandFilter, registerCommandFilter, useAppViewStore } from '../stores/useAppViewStore';
-import type { LibraryQueryPort } from '../library/core/contracts/session';
+import type { LibraryQueryPort } from '../library/core/shared/session.contract';
 
 // src/hooks/useGridCommandFilter.ts
 // Hands one grid's filter box over to the command palette.
@@ -28,13 +28,18 @@ type UseGridCommandFilterParams = {
      * on screen saying so.
      */
     reopenIfFiltered?: boolean;
+    /** ↓ in the box: move the keyboard to the first result (see CommandFilterAnchor.focusResults). */
+    onFocusResults?: () => boolean;
 };
 
-export const useGridCommandFilter = ({ isInteractive, port, anchorRef, reopenIfFiltered = false }: UseGridCommandFilterParams) => {
+export const useGridCommandFilter = ({ isInteractive, port, anchorRef, reopenIfFiltered = false, onFocusResults }: UseGridCommandFilterParams) => {
     // Assigned during render, not in an effect: an effect leaves a window in which the palette
     // would write through the previous render's setter.
     const latestRef = useRef(port);
     latestRef.current = port;
+    const focusResultsRef = useRef(onFocusResults);
+    focusResultsRef.current = onFocusResults;
+    const hasFocusResults = Boolean(onFocusResults);
     const isFiltering = useAppViewStore(state => state.isCommandFilterOpen);
 
     useEffect(() => {
@@ -46,8 +51,9 @@ export const useGridCommandFilter = ({ isInteractive, port, anchorRef, reopenIfF
             getQuery: () => latestRef.current.getQuery(),
             setQuery: (next) => latestRef.current.setQuery(next),
             getAnchor: () => anchorRef.current,
+            ...(hasFocusResults ? { focusResults: () => focusResultsRef.current?.() ?? false } : {}),
         });
-    }, [anchorRef, isInteractive]);
+    }, [anchorRef, hasFocusResults, isInteractive]);
 
     // Declared after the registration so that, on the same commit, the owner exists before the request.
     const reopenedRef = useRef(false);

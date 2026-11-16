@@ -28,16 +28,30 @@ vi.mock('../../../src/stores/usePlaybackStore', () => ({
 }));
 vi.mock('../../../src/stores/motionSignals', () => ({
     audioPower: fixture.signal(), currentTime: fixture.signal(), lyricCurrentTime: fixture.signal(),
+    handoffProgress: fixture.signal(), handoffLyricCurrentTime: fixture.signal(),
     audioBands: Object.fromEntries(['bass', 'lowMid', 'mid', 'vocal', 'treble', 'spectrum'].map(key => [key, fixture.signal()])),
 }));
+vi.mock('../../../src/components/app/backgroundThrottling/backgroundLyricHoldStore', () => ({
+    isBackgroundLyricHeld: () => false, setHeldLyricTime: vi.fn(),
+    useBackgroundLyricHoldStore: { subscribe: () => () => {} },
+}));
+vi.mock('../../../src/services/onlineMusic/omni', () => ({ omni: {} }));
+vi.mock('../../../src/hooks/useBeatFxTrack', () => ({ useBeatFxTrack: () => false }));
+vi.mock('../../../src/services/beatFx/beatFxLive', () => ({ tickBeatFx: vi.fn() }));
+vi.mock('../../../src/services/hifi/hifiPlayback', () => ({ getHifiPosition: () => 0 }));
+vi.mock('../../../src/services/onlineMusic/externalPlayback', () => ({
+    getExternalPosition: () => 0, isExternalPlaybackSounding: () => false,
+}));
+vi.mock('../../../src/services/automix/transitionCue', () => ({ getTransitionHandoffProgress: () => 0 }));
 
 import { audioBands, audioPower, currentTime, lyricCurrentTime } from '../../../src/stores/motionSignals';
-import { usePlaybackVisualizerBridge } from '../../../src/hooks/usePlaybackVisualizerBridge';
+import { usePlaybackVisualizerBridge } from '../../../src/components/app/playback/bridges/usePlaybackVisualizerBridge';
 
 beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.stubGlobal('window', { setTimeout, clearTimeout });
 });
 afterEach(() => vi.unstubAllGlobals());
 

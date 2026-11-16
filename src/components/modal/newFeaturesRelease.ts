@@ -1,4 +1,4 @@
-import { Keyboard, Link, Music2, Search } from 'lucide-react';
+import { AppWindow, Clapperboard, Palette, Shapes, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 // src/components/modal/newFeaturesRelease.ts
@@ -6,22 +6,25 @@ import type { LucideIcon } from 'lucide-react';
 type NewFeatureCard = {
     id: string;
     icon: LucideIcon;
-    daylightIconClassName: string;
-    darkIconClassName: string;
 };
 
 type NewFeaturesRelease = {
     i18nKey: string;
+    /** 重大更新：介绍上方显示「<代号> Update · 重大更新」标签；代号不翻译，文案在 help.majorUpdateLabel。
+     *  servicePack：同一重大更新的热修复版，标签改成「<代号> Update SP<n> · 重大更新」，文案在 help.servicePackLabel。 */
+    majorUpdate?: { codename: string; servicePack?: number };
     features: NewFeatureCard[];
 };
 
 // Defines the current release's cards; their localized text lives under i18nKey in every locale.
 export const NEW_FEATURES_RELEASE: NewFeaturesRelease = {
-    i18nKey: 'releaseNotes.v0_7_16',
+    i18nKey: 'releaseNotes.v0_7_28',
+    majorUpdate: { codename: 'Mimiambol' },
     features: [
-        { id: 'amllSource', icon: Music2, daylightIconClassName: 'text-violet-600', darkIconClassName: 'text-violet-400' },
-        { id: 'amllSearch', icon: Search, daylightIconClassName: 'text-amber-600', darkIconClassName: 'text-amber-400' },
-        { id: 'gridTabKeys', icon: Keyboard, daylightIconClassName: 'text-cyan-600', darkIconClassName: 'text-cyan-400' },
-        { id: 'searchLinks', icon: Link, daylightIconClassName: 'text-emerald-600', darkIconClassName: 'text-emerald-400' },
+        { id: 'scenes', icon: Clapperboard },
+        { id: 'newLook', icon: Shapes },
+        { id: 'windowControls', icon: AppWindow },
+        { id: 'styleOptions', icon: Palette },
+        { id: 'moreDetails', icon: Sparkles },
     ],
 };

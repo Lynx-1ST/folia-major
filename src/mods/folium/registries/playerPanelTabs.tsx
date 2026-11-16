@@ -1,18 +1,26 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
+import { Puzzle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useLucideIcons } from '@/hooks/useLucideIcons';
+import { lucideExportName, resolveLucideIcon } from '@/services/lucideIconResolver';
 import type { Theme } from '@/types';
-import type { FoliumPanelContext, FoliumPlayerPanelTabDef } from '../contract';
+import type { FoliumPlayerPanelTabDef } from '../contract';
 import { toFoliumTheme } from '../dto';
-import { resolveFoliumLabel } from '../params';
-import { createFoliumRegistry, useFoliumRegistryEntries, type FoliumRegistryEntry } from '../registry';
-import { FoliumMountHost } from '../FoliumMountHost';
+import { resolveFoliumLabel } from '../../params/params';
+import { createFoliumRegistry, useFoliumRegistryEntries, type FoliumRegistryEntry } from '../../runtime/registry';
+import { FoliumMountHost } from '../../runtime/FoliumMountHost';
+import { foliumMountName } from '../kinds';
+import { useFoliumPanelContext } from './useFoliumPanelContext';
 
 // src/mods/folium/registries/playerPanelTabs.tsx
 // `folium.registries.playerPanelTabs`: extra tabs in the player panel. The host
-// adds a tab button (label from the mod, a puzzle icon) and mounts the mod's
-// content in an isolated container when that tab is open.
+// adds a tab button (label from the mod, and the lucide icon it names or a
+// puzzle) and mounts the mod's content in an isolated container when that tab
+// is open.
 
 export const FOLIUM_PANEL_TAB_PREFIX = 'folium:';
+
+const PANEL_TAB = foliumMountName('playerPanelTabs', 'panelTab');
 
 export const playerPanelTabsRegistry = createFoliumRegistry<FoliumPlayerPanelTabDef>('playerPanelTabs', {
     validate: (def) => {
@@ -25,6 +33,34 @@ export const playerPanelTabsRegistry = createFoliumRegistry<FoliumPlayerPanelTab
 
 export const foliumPanelTabId = (id: string) => `${FOLIUM_PANEL_TAB_PREFIX}${id}` as const;
 
+type PanelTabIcon = React.ComponentType<{ size?: number }>;
+
+// One component for each icon name, so a tab's icon keeps its identity from render to render.
+const namedTabIcons = new Map<string, PanelTabIcon>();
+
+// A lucide icon name as `folium.ui.icon` takes it: lower-case words joined by hyphens.
+const LUCIDE_ICON_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * The icon of a mod's tab (Folium 1.9): the lucide icon its definition names, loaded on first use like every
+ * icon a mod names; the puzzle while it loads, for a name lucide does not have, and for a tab that names none.
+ */
+export const foliumPanelTabIcon = (name: unknown): PanelTabIcon => {
+    if (typeof name !== 'string' || !LUCIDE_ICON_NAME.test(name)) return Puzzle;
+    let icon = namedTabIcons.get(name);
+    if (!icon) {
+        const names = [lucideExportName(name)];
+        const NamedTabIcon: PanelTabIcon = ({ size }) => {
+            useLucideIcons(names);
+            const Icon = resolveLucideIcon(names[0]) ?? Puzzle;
+            return <Icon size={size} />;
+        };
+        icon = NamedTabIcon;
+        namedTabIcons.set(name, icon);
+    }
+    return icon;
+};
+
 /** The mod tabs to append to the panel's tab row, sorted by order. */
 export const useFoliumPanelTabs = () => {
     const { i18n } = useTranslation();
@@ -34,30 +70,8 @@ export const useFoliumPanelTabs = () => {
         .map((entry) => ({
             id: foliumPanelTabId(entry.id),
             label: resolveFoliumLabel(entry.def.label, i18n.language, entry.name),
+            icon: foliumPanelTabIcon(entry.def.icon),
         })), [entries, i18n.language]);
-};
-
-const usePanelContext = (theme: Theme, isDaylight: boolean, locale: string): FoliumPanelContext => {
-    const themeRef = useRef({ theme, isDaylight });
-    themeRef.current = { theme, isDaylight };
-    const listenersRef = useRef(new Set<() => void>());
-    const ctx = useMemo<FoliumPanelContext>(() => Object.freeze({
-        locale,
-        getTheme: () => toFoliumTheme(themeRef.current.theme, themeRef.current.isDaylight),
-        subscribe: (listener: () => void) => {
-            listenersRef.current.add(listener);
-            return () => listenersRef.current.delete(listener);
-        },
-    }), [locale]);
-    const primedRef = useRef(false);
-    useEffect(() => {
-        if (!primedRef.current) {
-            primedRef.current = true;
-            return;
-        }
-        listenersRef.current.forEach((listener) => listener());
-    }, [theme, isDaylight]);
-    return ctx;
 };
 
 const FoliumPanelTabContent: React.FC<{
@@ -66,13 +80,13 @@ const FoliumPanelTabContent: React.FC<{
     isDaylight: boolean;
 }> = ({ entry, theme, isDaylight }) => {
     const { i18n } = useTranslation();
-    const ctx = usePanelContext(theme, isDaylight, i18n.language);
+    const ctx = useFoliumPanelContext(theme, isDaylight, i18n.language);
     const foliumTheme = useMemo(() => toFoliumTheme(theme, isDaylight), [theme, isDaylight]);
     return (
         <FoliumMountHost
             modId={entry.modId}
             where={`panel tab ${entry.id}`}
-            entryKind="panel-tab"
+            entryKind={PANEL_TAB}
             entryId={entry.id}
             mount={entry.def.mount}
             ctx={ctx}

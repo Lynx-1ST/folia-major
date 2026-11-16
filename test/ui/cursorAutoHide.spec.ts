@@ -21,7 +21,8 @@ const readCursor = (page: Page, locator: ReturnType<typeof surface>) => locator.
 const openPlayerPage = async (page: Page, cursorEnabled: boolean) => {
     await page.addInitScript(([version, guideKey, cursor]) => {
         localStorage.clear();
-        localStorage.setItem('i18nextLng', 'zh-CN');
+        localStorage.setItem('library_suite_prompt_seen', 'true');
+        localStorage.setItem('folia_app_language', 'zh-CN');
         localStorage.setItem('open_player_on_launch', 'true');
         localStorage.setItem('visualizer_mode', 'classic');
         localStorage.setItem('static_mode', 'true');

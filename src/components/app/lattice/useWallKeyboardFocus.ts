@@ -10,12 +10,14 @@ import {
     type RefObject,
     type SetStateAction,
 } from 'react';
-import type { LatticeGeometry, QueueInstance, WallMetrics } from './layout';
+import type { QueueInstance, WallMetrics } from '../../wall/layout';
+import type { WallLayout } from './wallLayout';
 import {
-    findAdjacentInstance,
     findNearestInstance,
+    pickAdjacentInstance,
     type WallDirection,
-} from './wallNavigation';
+} from '../../wall/wallNavigation';
+import { hasBlockingWindow } from '../../../utils/keyboardTargets';
 import { useLatticePosterSelection } from './useLatticePosterSelection';
 import type { LatticeTile } from './latticeModel';
 import type { ActiveLatticePoster } from './useLatticePlaybackFocus';
@@ -31,7 +33,8 @@ const ARROW_DIRECTIONS: Record<string, WallDirection> = {
 
 type WallKeyboardFocusOptions = {
     activePoster: ActiveLatticePoster | null;
-    geometry: LatticeGeometry;
+    /** How the wall is laid out: where an arrow step may land, and the nearest copy of a tile. */
+    layout: WallLayout;
     getViewportCenter: () => { x: number; y: number };
     containerRef: RefObject<HTMLDivElement | null>;
     instances: QueueInstance[];
@@ -47,7 +50,7 @@ type WallKeyboardFocusOptions = {
 export const useWallKeyboardFocus = ({
     activePoster,
     containerRef,
-    geometry,
+    layout,
     getViewportCenter,
     instances,
     metrics,
@@ -58,7 +61,7 @@ export const useWallKeyboardFocus = ({
     worldRef,
     onBack,
 }: WallKeyboardFocusOptions) => {
-    const [selection, setSelection] = useLatticePosterSelection(tiles, geometry, metrics);
+    const [selection, setSelection] = useLatticePosterSelection(tiles, layout);
     const focused = selection?.instance ?? null;
     // Held arrow keys fire faster than React re-renders, so the next step is computed from a ref;
     // reading state here would recompute the same hop from a value one render behind.
@@ -101,16 +104,19 @@ export const useWallKeyboardFocus = ({
         if (!seed) return;
         // The first arrow press only adopts what is already on screen; later ones travel.
         const next = current
-            ? findAdjacentInstance(seed, direction, geometry, tiles.length, metrics, rendered)
+            ? pickAdjacentInstance(seed, direction, layout.stepCandidates(seed), metrics, rendered)
             : seed;
         if (!next) return;
 
         setFocused(next);
         panTo(rendered.get(next.instanceId) ?? next);
-    }, [geometry, getViewportCenter, instances, metrics, panTo, rendered, setFocused, tiles.length]);
+    }, [getViewportCenter, instances, layout, metrics, panTo, rendered, setFocused]);
 
     const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
         if (event.altKey || event.ctrlKey || event.metaKey) return;
+        // A window opened over the wall has the keyboard, also while the focus stays on the card it was opened
+        // from (the lyrics timeline takes none): its keys are not the wall's, as on the library wall and the grid.
+        if (hasBlockingWindow()) return;
 
         if (event.key === 'Escape') {
             event.preventDefault();
@@ -148,7 +154,11 @@ export const useWallKeyboardFocus = ({
     useEffect(() => {
         const queueChanged = previousTilesRef.current !== tiles;
         previousTilesRef.current = tiles;
-        if (!focused || !(pendingFocusRef.current || (queueChanged && focusWithinRef.current))) return;
+        // A new list may seat the focused card elsewhere, and the focus goes with it. Kept as a
+        // pending focus: the cull may change again before the frame below (the camera follows a
+        // grown card that was re-seated), and that run of this effect no longer sees a new list.
+        if (focused && queueChanged && focusWithinRef.current) pendingFocusRef.current = true;
+        if (!focused || !pendingFocusRef.current) return;
         let timer: ReturnType<typeof setTimeout> | null = null;
         const frame = requestAnimationFrame(() => {
             timer = setTimeout(() => {

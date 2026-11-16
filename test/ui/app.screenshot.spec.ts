@@ -79,10 +79,12 @@ test.describe('frontend screenshot coverage', () => {
     await mockNeteaseApi(page, 'guest');
 
     await openApp(page);
-    await page.getByRole('button', { name: /Connect .* Account/ }).first().click();
+    // The home button opens the sign-in window with nothing chosen; the row of the platform starts its sign-in.
+    await page.getByRole('button', { name: 'Login', exact: true }).click();
 
     const loginDialog = page.getByRole('dialog');
     await expect(loginDialog).toBeVisible();
+    await loginDialog.getByRole('option').first().click();
     await expect(loginDialog).toBeHidden({ timeout: 10_000 });
     await expect(page.getByRole('heading', { name: 'Daily Mix' }).first()).toBeVisible();
   });

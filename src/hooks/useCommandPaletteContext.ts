@@ -1,13 +1,11 @@
-import { useLatticeControlsStore } from '../stores/useLatticeControlsStore';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { selectDisplayLyrics, selectDisplayPlayerState, usePlaybackStore } from '../stores/usePlaybackStore';
-import { useSearchNavigationStore } from '../stores/useSearchNavigationStore';
 import { setIsPanelOpen, setPanelTab, useAppViewStore } from '../stores/useAppViewStore';
 import { useGridSurfaceStore } from '../stores/useGridSurfaceStore';
-import { useLibraryDirectorySurfaceStore } from '../library/core/state/useLibraryDirectorySurfaceStore';
-import { useLibraryArtistSurfaceStore } from '../library/core/state/useLibraryArtistSurfaceStore';
-import { useLibrarySuiteChromeStore } from '../library/core/state/useLibrarySuiteChromeStore';
+import { useLibraryDirectorySurfaceStore } from '../library/core/directory/useLibraryDirectorySurfaceStore';
+import { useLibraryArtistSurfaceStore } from '../library/core/artist/useLibraryArtistSurfaceStore';
+import { useLibrarySuiteChromeStore } from '../library/core/suite/useLibrarySuiteChromeStore';
 import { useShallow } from 'zustand/react/shallow';
 import type { CommandPaletteContext } from '../components/command-palette/types';
 import {
@@ -29,6 +27,7 @@ import { useAutomixSettingsStore } from '../stores/useAutomixSettingsStore';
 import { useDesktopSettingsStore } from '../stores/useDesktopSettingsStore';
 import { useLyricSettingsStore } from '../stores/useLyricSettingsStore';
 import { usePersonalFmModeStore } from '../stores/usePersonalFmModeStore';
+import { useOnlineProviderAccountStore } from '../stores/useOnlineProviderAccountStore';
 import { usePlayerChromeSettingsStore } from '../stores/usePlayerChromeSettingsStore';
 import { useSleepTimerStore } from '../stores/useSleepTimerStore';
 import { useTypographySettingsStore } from '../stores/useTypographySettingsStore';
@@ -37,6 +36,9 @@ import { useLyricSegmentationStore } from '../stores/useLyricSegmentationStore';
 import { useLatticeSettingsStore } from '../stores/useLatticeSettingsStore';
 import { useInteractionSettingsStore } from '../stores/useInteractionSettingsStore';
 import type { LyricSegmentationActions } from '../components/app/playback/createLyricSegmentationActions';
+import { selectNativeHomeTabWithoutSurface } from '../components/app/home/foliumHomePageDismissal';
+import { isRecommendationPreferencesOffered } from '../components/recommendationPreferences/useRecommendationPreferencesStore';
+import { omni } from '../services/onlineMusic/omni';
 
 // src/hooks/useCommandPaletteContext.ts
 // Assembles the command palette's namespaced context.
@@ -53,11 +55,21 @@ import type { LyricSegmentationActions } from '../components/app/playback/create
 /** What this hook fills in from stores, i18n and the display selectors. */
 const AMBIENT_KEYS = [
     't', 'currentSong', 'lyrics', 'playerState',
-    'queue', 'isFmMode',
-    'setHomeViewTab', 'setPanelTab', 'setIsPanelOpen',
+    'queue', 'isFmMode', 'isRecommendationPreferencesOffered',
+    'selectHomeViewTab', 'setPanelTab', 'setIsPanelOpen',
 ] as const;
 
 type AmbientKey = (typeof AMBIENT_KEYS)[number];
+
+// The palette's filtered list only needs to change when the answer changes.
+const subscribeRecommendationPreferencesAvailability = (onChange: () => void) => {
+    const unsubscribeAccount = useOnlineProviderAccountStore.subscribe(onChange);
+    const unsubscribeProviders = omni.subscribeProviders(onChange);
+    return () => {
+        unsubscribeAccount();
+        unsubscribeProviders();
+    };
+};
 
 export type CommandPaletteContextDeps = Omit<
     SharedCommandContextDeps
@@ -78,7 +90,7 @@ export const useCommandPaletteContext = (
     const queue = usePlaybackStore(state => state.playQueue);
     const isFmMode = usePlaybackStore(state => state.isFmMode);
     const queuePaletteKeepOpen = useInteractionSettingsStore(state => state.queuePaletteKeepOpen);
-    const setHomeViewTab = useSearchNavigationStore(state => state.setHomeViewTab);
+    const visualizerPickerKeepOpen = useInteractionSettingsStore(state => state.visualizerPickerKeepOpen);
     // What is on screen, transitions included: surfaces that publish lyrics (the mod runtime
     // snapshot) must send the rendered ones, not a guess rebuilt from the song's stored state.
     const lyrics = usePlaybackStore(selectDisplayLyrics);
@@ -88,6 +100,10 @@ export const useCommandPaletteContext = (
     // pauses - so Play paused - while Pause saw no PLAYING to toggle and did nothing at all. Both
     // commands named the opposite of what they did, for up to half a minute per track.
     const playerState = usePlaybackStore(selectDisplayPlayerState);
+    const recommendationPreferencesOffered = useSyncExternalStore(
+        subscribeRecommendationPreferencesAvailability,
+        isRecommendationPreferencesOffered,
+    );
     const ambient = useMemo(() => ({
         t: (key: string, fallback?: string) => t(key, fallback ?? ''),
         currentSong,
@@ -95,10 +111,12 @@ export const useCommandPaletteContext = (
         playerState,
         queue,
         isFmMode,
-        setHomeViewTab,
+        isRecommendationPreferencesOffered,
+        // 首页 surface 不在时选原生页签：写 homeViewTab，并关掉开着的模组首页页面（见 foliumHomePageDismissal）。
+        selectHomeViewTab: selectNativeHomeTabWithoutSurface,
         setPanelTab,
         setIsPanelOpen,
-    }), [t, currentSong, lyrics, playerState, queue, isFmMode, setHomeViewTab]);
+    }), [t, currentSong, lyrics, playerState, queue, isFmMode]);
 
     // Narrow subscriptions: these are the store fields the palette displays or gates on.
     const settingsSignals = useTypographySettingsStore(useShallow(state => ({
@@ -144,8 +162,14 @@ export const useCommandPaletteContext = (
     const lyricStaffPolicy = useLyricSettingsStore(state => state.lyricStaffPolicy);
     const lyricStaffAbsorbMode = useLyricSettingsStore(state => state.lyricStaffAbsorbMode);
     const personalFmSelection = usePersonalFmModeStore(state => state.selection);
+    const personalFmCatalogs = usePersonalFmModeStore(state => state.catalogs);
+    const providerFmSelections = usePersonalFmModeStore(state => state.providerSelections);
+    // The picker follows the extra radio on air: its choice and catalogue are read at build time too.
+    const fmStations = usePersonalFmModeStore(state => state.stations);
+    const fmStationCatalogs = usePersonalFmModeStore(state => state.stationCatalogs);
+    const fmOnAir = usePlaybackStore(state => state.isFmMode);
+    const activeProviderId = useOnlineProviderAccountStore(state => state.activeProviderId);
     // Which surface the palette is opening over; commands that only apply to one of them gate on it.
-    const latticeFocusAction = useLatticeControlsStore(state => state.focusCurrentSong);
     const view = useAppViewStore(state => state.view);
     // Whoever currently reads typed characters. Identity only changes when a grid takes or gives up
     // the keyboard, so it does not rebuild the context per keystroke — the query itself never
@@ -208,9 +232,11 @@ export const useCommandPaletteContext = (
         ...valueDeps,
         ambient,
         queuePaletteKeepOpen,
+        visualizerPickerKeepOpen,
         settingsSignals, chromeSignals, desktopSignals, automixSignals,
         sleepTimerSignals, latticeSignals, audioSignals, visualizerSignals,
-        lyricStaffPolicy, lyricStaffAbsorbMode, personalFmSelection, view, commandFilter, gridSurface, directorySurface, artistSurface, suiteChrome, canAddCurrentSongToPlaylist,
-        lyricSegmentationRecord, lyricSegmentationActions, latticeFocusAction,
+        lyricStaffPolicy, lyricStaffAbsorbMode, personalFmSelection, personalFmCatalogs, providerFmSelections, fmStations, fmStationCatalogs, fmOnAir, activeProviderId, view, commandFilter, gridSurface, directorySurface, artistSurface, suiteChrome, canAddCurrentSongToPlaylist,
+        recommendationPreferencesOffered,
+        lyricSegmentationRecord, lyricSegmentationActions,
     ]);
 };
